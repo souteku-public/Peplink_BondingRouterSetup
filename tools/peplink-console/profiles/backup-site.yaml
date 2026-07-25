@@ -1,0 +1,85 @@
+# ============================================================================
+# ゴールデンコンフィグ: 固定拠点バックアップ運用
+# ============================================================================
+# 有線WANをメインに使い、障害時のみセルラーへ自動切替する構成の設定基準。
+# 書き方は live-broadcast.yaml のヘッダーを参照してください。
+# ============================================================================
+
+profile: backup-site
+title: 固定拠点バックアップ運用
+description: |
+  有線WANをメイン、セルラーをバックアップとして待機させる常設拠点向けの設定基準。
+  データ量の使いすぎ防止と、確実なフェイルオーバーを重視する。
+
+rules:
+  # ---------------------------------------------------------------- 死活監視
+  - key: wan.*.healthcheck.enable
+    expect: { equals: true }
+    severity: error
+    reason: メイン回線のヘルスチェックが無効だと、上流障害時にバックアップへ切り替わりません
+    ref: 03_WAN設定.md
+    fix_value: true
+
+  - key: wan.*.healthcheck.method
+    when: { wan_type: [cellular, gobi] }
+    expect: { equals: smartcheck }
+    severity: error
+    reason: セルラーWANで選択できるヘルスチェック方式は SmartCheck のみです
+    ref: 03_WAN設定.md
+    fix_value: smartcheck
+
+  - key: wan.*.healthcheck.recovery
+    expect: { min: 3 }
+    severity: warning
+    reason: 復帰判定を短くしすぎると、不安定な回線でフラッピング(行き来)が発生します
+    ref: 03_WAN設定.md
+
+  # ---------------------------------------------------------------- データ量管理
+  - key: wan.*.allowance.enable
+    when: { wan_type: [cellular, gobi] }
+    expect: { equals: true }
+    severity: error
+    reason: バックアップ回線の使いすぎを検知するため、従量SIMではデータ量監視を必ず有効にします
+    ref: 03_WAN設定.md
+    fix_value: true
+
+  - key: wan.*.allowance.limit
+    when: { wan_type: [cellular, gobi] }
+    expect: { is_set: true }
+    severity: error
+    reason: 契約データ量を上限として登録しておきます(単位はMB)
+    ref: 03_WAN設定.md
+
+  # ---------------------------------------------------------------- セルラー待機設定
+  - key: wan.*.sim1.apn
+    when: { wan_type: [cellular, gobi] }
+    expect: { is_set: true }
+    severity: error
+    reason: 待機回線のAPN未設定は、切替が必要になった瞬間に初めて発覚する典型的な事故です
+    ref: 04_セルラー設定.md
+
+  - key: wan.*.sim1.roaming
+    when: { wan_type: [cellular, gobi] }
+    expect: { equals: false }
+    severity: warning
+    reason: 常設拠点ではローミング不要です
+    ref: 04_セルラー設定.md
+    fix_value: false
+
+  # ---------------------------------------------------------------- セキュリティ
+  - key: wan.*.icmp_ping
+    expect: { equals: false }
+    severity: warning
+    reason: 外形監視でpingを使わないのであれば、WAN側のICMP応答は無効が無難です
+    ref: 03_WAN設定.md
+
+manual_checks:
+  - key: system.notification
+    expect_text: WAN断・フェイルオーバー時のメール通知が有効
+    reason: 無人拠点では通知がないと障害に気づけません。System > Email Notification を確認
+    ref: 09_システム設定.md
+
+  - key: system.admin_security
+    expect_text: 管理画面のWAN側公開が無効、初期パスワードから変更済み
+    reason: Router APIから管理者設定は読めないため、Web GUIで確認します
+    ref: 09_システム設定.md

@@ -39,12 +39,25 @@ Web GUI はページ数・項目数が多く、英語表記であるため、本
 | 10 | [運用レシピ集](docs/10_運用レシピ集.md) | 中継・ライブ配信向けボンディング設定、フェイルオーバー構成などの実例 |
 | 11 | [トラブルシューティング](docs/11_トラブルシューティング.md) | つながらない・切れる・遅い時の切り分け手順 |
 
-## 設定管理UI(開発構想)
+## 設定管理コンソール(実装済みツール)
 
-「視認性・操作感のよい独自UIから設定でき、機器の現在値を吸い上げて正誤判定する」仕組みは
-**Peplink 公式の Router API(ローカルHTTP API)を使って実装可能**です。
+公式 Router API を使い、**日本語のWeb画面から設定を確認・監査・変更する**ツールを同梱しています。
 
-- 設計構想・アーキテクチャ・API仕様の調査結果: [docs/design/設定管理UI構想.md](docs/design/設定管理UI構想.md)
+```bash
+cd tools/peplink-console
+python3 -m pip install -r requirements.txt
+python3 run.py --demo          # 実機なしで画面を確認できます
+```
+
+- **導入手順・接続設定・操作方法**: [tools/peplink-console/README.md](tools/peplink-console/README.md)
+- 画面: ①ダッシュボード(全機器の状態集約) ②設定監査(あるべき値との突合)
+  ③設定一覧(全項目と現在値・API対応状況) ④設定エディタ(差分確認 → 反映)
+- 設計構想とAPI仕様の調査結果: [docs/design/設定管理UI構想.md](docs/design/設定管理UI構想.md)
+- 画面イメージ(静的モックアップ): [docs/design/UIモックアップ.html](docs/design/UIモックアップ.html)
+
+> **Router API で操作できない設定があります**(SpeedFusionのWAN Smoothing、
+> アウトバウンドポリシー、ファイアウォールなど)。全一覧は
+> [ツールのREADME「操作できない設定項目」](tools/peplink-console/README.md#操作できない設定項目) を参照してください。
 
 ## 参照資料
 

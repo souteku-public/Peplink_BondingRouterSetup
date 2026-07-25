@@ -1,4 +1,13 @@
-# 設定管理UI 開発構想(実装前の設計ドキュメント)
+# 設定管理UI 開発構想
+
+> **本構想は実装済みです。** 動作するツールは [`tools/peplink-console/`](../../tools/peplink-console/)
+> にあり、導入手順は [そのREADME](../../tools/peplink-console/README.md) を参照してください。
+>
+> 実装の過程でAPI仕様を精査した結果、**Router API では読み書きできない設定が
+> 想定より多い**ことが判明しました(SpeedFusionのWAN Smoothing/FEC/ボンディング方式、
+> アウトバウンドポリシー、ファイアウォール、QoS、LAN/VLANの変更など)。
+> ツールはこれらを「ⓘ 手動確認」として明示し、Web GUIでの目視確認に誘導する設計にしています。
+> 全一覧は [操作できない設定項目](../../tools/peplink-console/README.md#操作できない設定項目)。
 
 ## 1. 結論: 実現可能か
 

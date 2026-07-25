@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Peplink 設定管理コンソール</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="appbar">
+      <div class="brand">
+        <span class="logo">Bonding Fleet Console</span>
+        <span class="sub">PEPLINK 設定管理</span>
+      </div>
+      <div class="spacer"></div>
+      <div class="sync">
+        <span id="mode-badge" class="badge">起動中…</span>
+        <span id="sync-time">—</span>
+        <button id="btn-refresh" class="btn-ghost" type="button">今すぐ同期</button>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist" aria-label="画面切り替え">
+      <button class="tab" role="tab" data-screen="dashboard" aria-selected="true" type="button">① ダッシュボード</button>
+      <button class="tab" role="tab" data-screen="audit" aria-selected="false" type="button">② 設定監査</button>
+      <button class="tab" role="tab" data-screen="settings" aria-selected="false" type="button">③ 設定一覧</button>
+      <button class="tab" role="tab" data-screen="editor" aria-selected="false" type="button">④ 設定エディタ</button>
+    </nav>
+
+    <div id="banner" class="banner" hidden></div>
+
+    <!-- ===================== ダッシュボード ===================== -->
+    <section class="screen active" id="screen-dashboard" role="tabpanel">
+      <p class="screen-caption"><b>全機器のいまを1画面で。</b> Router APIから吸い上げた状態を表示します。</p>
+      <div id="stat-row" class="stat-row"></div>
+      <div id="device-grid" class="device-grid"></div>
+    </section>
+
+    <!-- ===================== 設定監査 ===================== -->
+    <section class="screen" id="screen-audit" role="tabpanel">
+      <p class="screen-caption"><b>「あるべき値」との突合結果。</b> プロファイル(ゴールデンコンフィグ)と機器の現在値を項目ごとに比較します。</p>
+      <div class="toolbar">
+        <label class="lbl">機器
+          <select id="audit-device" class="select"></select>
+        </label>
+        <label class="lbl">プロファイル
+          <select id="audit-profile" class="select"></select>
+        </label>
+        <div class="meter-row">
+          <div class="meter"><i id="audit-meter" style="width:0%"></i></div>
+          <span id="audit-count" class="hint">—</span>
+        </div>
+        <label class="lbl chk"><input type="checkbox" id="audit-only-issues" /> 問題のある項目のみ</label>
+      </div>
+      <div id="audit-legend" class="chip-legend"></div>
+      <div class="card table-scroll">
+        <table class="data" id="audit-table">
+          <thead>
+            <tr>
+              <th style="width:112px">判定</th>
+              <th>設定項目</th>
+              <th>期待値</th>
+              <th>現在値</th>
+              <th>根拠</th>
+              <th style="width:120px">操作</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="footnote">
+        <b>ⓘ 手動確認</b> は Router API に該当エンドポイントが無く、ツールから読み取れない項目です。Web GUI で目視確認してください
+        (対象一覧は <span class="mono">③ 設定一覧</span> の「API非対応」で絞り込めます)。
+      </p>
+    </section>
+
+    <!-- ===================== 設定一覧 ===================== -->
+    <section class="screen" id="screen-settings" role="tabpanel">
+      <p class="screen-caption"><b>この機器の設定項目と現在値の全一覧。</b> APIで読めるか・書けるかを項目ごとに明示しています。</p>
+      <div class="toolbar">
+        <label class="lbl">機器
+          <select id="settings-device" class="select"></select>
+        </label>
+        <label class="lbl">分類
+          <select id="settings-category" class="select"></select>
+        </label>
+        <label class="lbl">API対応
+          <select id="settings-access" class="select">
+            <option value="">すべて</option>
+            <option value="rw">読み書き可</option>
+            <option value="ro">参照のみ</option>
+            <option value="manual">API非対応(手動)</option>
+          </select>
+        </label>
+        <input type="search" id="settings-search" class="select" placeholder="項目名・キーで検索" />
+        <span id="settings-count" class="hint"></span>
+      </div>
+      <div class="card table-scroll">
+        <table class="data" id="settings-table">
+          <thead>
+            <tr>
+              <th>設定項目</th>
+              <th style="width:220px">現在値</th>
+              <th style="width:150px">API対応</th>
+              <th>補足</th>
+              <th style="width:96px">根拠</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== 設定エディタ ===================== -->
+    <section class="screen" id="screen-editor" role="tabpanel">
+      <p class="screen-caption"><b>変更は差分を確認してから反映。</b> 「機器に反映する」を押すまで機器には送信されません(実機のSave→Applyと同じ2段階)。</p>
+      <div class="toolbar">
+        <label class="lbl">機器
+          <select id="editor-device" class="select"></select>
+        </label>
+        <label class="lbl">分類
+          <select id="editor-category" class="select"></select>
+        </label>
+        <span id="editor-write-state" class="hint"></span>
+      </div>
+      <div class="editor-grid">
+        <div class="card">
+          <div id="editor-form" class="form-body"></div>
+        </div>
+        <aside class="card diff-panel">
+          <h4>保留中の変更 <span id="pending-count" class="count">0件</span></h4>
+          <div id="pending-list" class="pending-list"></div>
+          <button id="btn-apply" class="apply-btn" type="button" disabled>機器に反映する(Apply)</button>
+          <button id="btn-clear" class="btn-ghost dark" type="button">保留を取り消す</button>
+          <p class="apply-note">
+            反映時は Router API の <span class="mono">config.wan.connection</span> で保存し、
+            <span class="mono">cmd.config.apply</span> を実行します。項目により該当WANの再接続が発生します。
+          </p>
+        </aside>
+      </div>
+    </section>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

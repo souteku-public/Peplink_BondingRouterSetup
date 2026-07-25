@@ -1,0 +1,138 @@
+# ============================================================================
+# ゴールデンコンフィグ: ライブ中継・配信運用
+# ============================================================================
+# 「機器がこうなっているべき」という期待値を書くファイルです。
+# 監査画面がこの内容と機器の現在値を突合し、✓/△/✕ を判定します。
+#
+# 書き方
+#   key       : 監査対象の設定キー。`*` でワイルドカード指定可(設定一覧画面でキーを確認できます)
+#   expect    : 判定条件。演算子は1つだけ書きます
+#               equals / not_equals / in / not_in / is_set / min / max / between /
+#               contains / not_contains
+#   severity  : error(✕・要対応) または warning(△・要確認)
+#   when      : 適用条件。wan_type: [cellular] のように回線種別で絞れます
+#   reason    : なぜこの値であるべきかの説明(画面に表示されます)
+#   ref       : 根拠マニュアルのファイル名
+#   fix_value : 「期待値へ修正」ボタンが書き込む値(省略すると修正ボタンは出ません)
+# ============================================================================
+
+profile: live-broadcast
+title: ライブ中継・配信運用
+description: |
+  セルラー回線をボンディングして映像を送出する運用向けの設定基準。
+  瞬断とパケロスを最小化し、本番中に回線が自動切断されないことを最優先とする。
+
+rules:
+  # ---------------------------------------------------------------- 回線の死活監視
+  - key: wan.*.healthcheck.enable
+    expect: { equals: true }
+    severity: error
+    reason: ヘルスチェックが無効だと上流障害を検知できず、フェイルオーバーが機能しません
+    ref: 03_WAN設定.md
+    fix_value: true
+
+  - key: wan.*.healthcheck.method
+    when: { wan_type: [cellular, gobi] }
+    expect: { equals: smartcheck }
+    severity: error
+    reason: セルラーWANで選択できるヘルスチェック方式は SmartCheck のみです
+    ref: 03_WAN設定.md
+    fix_value: smartcheck
+
+  - key: wan.*.healthcheck.interval
+    expect: { max: 10 }
+    severity: warning
+    reason: 障害検知時間 ≒ 間隔 × リトライ回数。配信中の切替を速くするため間隔は10秒以内が目安
+    ref: 03_WAN設定.md
+
+  - key: wan.*.healthcheck.retry
+    expect: { between: [2, 5] }
+    severity: warning
+    reason: 少なすぎると瞬断で誤フェイルオーバー、多すぎると検知が遅れます
+    ref: 03_WAN設定.md
+
+  # ---------------------------------------------------------------- 切替速度
+  - key: wan.*.hot_standby
+    expect: { equals: true }
+    severity: error
+    reason: 待機回線も接続を維持しておくことで、フェイルオーバーが数十秒から数秒に短縮されます
+    ref: 03_WAN設定.md
+    fix_value: true
+
+  # ---------------------------------------------------------------- 本番中の自動切断防止
+  - key: wan.*.allowance.action
+    expect: { not_contains: disconnect }
+    severity: error
+    reason: 上限到達時の自動切断は本番中の事故に直結します。通知のみに設定してください
+    ref: 03_WAN設定.md
+    fix_value: [email]
+
+  - key: wan.*.allowance.enable
+    expect: { equals: true }
+    severity: warning
+    reason: データ量を把握できないと、次の現場で上限到達に気づけません
+    ref: 03_WAN設定.md
+
+  # ---------------------------------------------------------------- セルラー
+  - key: wan.*.sim1.apn
+    when: { wan_type: [cellular, gobi] }
+    expect: { is_set: true }
+    severity: error
+    reason: APNはSIMスロットごとに必要です。未設定だと該当スロットへ切替わった瞬間に接続不能になります
+    ref: 04_セルラー設定.md
+
+  - key: wan.*.sim2.apn
+    when: { wan_type: [cellular, gobi] }
+    expect: { is_set: true }
+    severity: warning
+    reason: SIM Bを使う構成なら必須。スロットBを使わない場合はこの警告は無視して構いません
+    ref: 04_セルラー設定.md
+
+  - key: wan.*.sim1.roaming
+    when: { wan_type: [cellular, gobi] }
+    expect: { equals: false }
+    severity: warning
+    reason: 国内キャリアSIMではローミングを無効にし、想定外の高額通信を防ぎます
+    ref: 04_セルラー設定.md
+    fix_value: false
+
+  - key: wan.*.sim1.band_selection
+    when: { wan_type: [cellular, gobi] }
+    expect: { is_set: false }
+    severity: warning
+    reason: 移動運用ではバンド自動(未固定)が推奨。固定したまま移動すると圏外の原因になります
+    ref: 04_セルラー設定.md
+
+  # ---------------------------------------------------------------- 帯域の申告値
+  - key: wan.*.bandwidth_upload
+    expect: { is_set: true }
+    severity: warning
+    reason: 申告帯域は負荷分散とQoSの配分基準です。実測の8割程度を設定してください
+    ref: 03_WAN設定.md
+
+# ============================================================================
+# 手動確認項目
+# ----------------------------------------------------------------------------
+# Router API に該当エンドポイントが無く、ツールから読み取れない項目です。
+# 監査画面に「ⓘ 手動確認」として一覧表示されるので、Web GUI で目視確認してください。
+# ============================================================================
+manual_checks:
+  - key: speedfusion.wan_smoothing
+    expect_text: Medium 〜 High
+    reason: 配信用サブトンネルでは瞬断・ジッタ対策としてWAN Smoothingを有効にします(帯域は2〜3倍消費)
+    ref: 05_SpeedFusion_VPN.md
+
+  - key: speedfusion.traffic_distribution
+    expect_text: Dynamic Weighted Bonding
+    reason: 品質のばらつきが大きいセルラー束ねでは動的重み付けが適します
+    ref: 05_SpeedFusion_VPN.md
+
+  - key: speedfusion.wan_priority
+    expect_text: 使用するセルラー回線が Priority 1
+    reason: トンネルに参加させる回線はダッシュボードのWAN優先度とは別設定です
+    ref: 05_SpeedFusion_VPN.md
+
+  - key: outbound_policy.rules
+    expect_text: エンコーダーのIPをトンネルへ誘導するルールが存在すること
+    reason: 映像トラフィックがトンネルを通っているかは Status > SpeedFusion で確認します
+    ref: 07_詳細設定.md

@@ -1,0 +1,7 @@
+# 機器の認証情報を含むため、実際の設定ファイルはコミットしない
+config.yaml
+config.*.yaml
+!config.example.yaml
+
+__pycache__/
+*.pyc

@@ -1,0 +1,289 @@
+/* Peplink 設定管理コンソール — 画面スタイル
+   ライト/ダーク両テーマに対応。OSの設定に追従する。 */
+
+:root {
+  color-scheme: light;
+  --bg: #f3f4f2;
+  --surface: #fdfdfc;
+  --surface-2: #f7f7f5;
+  --ink: #17181a;
+  --ink-2: #54565b;
+  --muted: #85878c;
+  --line: #e4e5e0;
+  --border: rgba(20, 22, 25, 0.10);
+  --header-bg: #17222f;
+  --header-ink: #eef1f4;
+  --header-muted: #93a1b0;
+  --accent: #e05a24;
+  --accent-strong: #c1461a;
+  --accent-ink: #ffffff;
+  --good: #0ca30c;
+  --good-text: #006300;
+  --warn: #fab219;
+  --warn-text: #7d5a00;
+  --crit: #d03b3b;
+  --crit-text: #a72020;
+  --info: #2a78d6;
+  --info-text: #1c5cab;
+  --chip-good-bg: rgba(12, 163, 12, 0.10);
+  --chip-warn-bg: rgba(250, 178, 25, 0.14);
+  --chip-crit-bg: rgba(208, 59, 59, 0.10);
+  --chip-info-bg: rgba(42, 120, 214, 0.10);
+  --shadow: 0 1px 2px rgba(15, 18, 22, 0.05), 0 4px 14px rgba(15, 18, 22, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #101113;
+    --surface: #1a1b1d;
+    --surface-2: #212225;
+    --ink: #f1f1ee;
+    --ink-2: #c0c1bb;
+    --muted: #8b8d92;
+    --line: #2b2c2f;
+    --border: rgba(255, 255, 255, 0.10);
+    --header-bg: #131c27;
+    --accent: #e8703f;
+    --accent-strong: #e8703f;
+    --accent-ink: #17181a;
+    --good-text: #4cc24c;
+    --warn-text: #e6b83e;
+    --crit-text: #e66767;
+    --info: #3987e5;
+    --info-text: #7fb2ee;
+    --chip-good-bg: rgba(12, 163, 12, 0.16);
+    --chip-crit-bg: rgba(230, 103, 103, 0.14);
+    --chip-info-bg: rgba(57, 135, 229, 0.16);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 14px rgba(0, 0, 0, 0.3);
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", Meiryo, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.mono { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 0.92em; }
+
+.app { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ---------------------------------------------------------------- ヘッダー */
+.appbar {
+  background: var(--header-bg);
+  color: var(--header-ink);
+  display: flex; align-items: center; gap: 18px;
+  padding: 12px 20px; flex-wrap: wrap;
+}
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.brand .logo { font-weight: 700; font-size: 15px; }
+.brand .logo::before {
+  content: ""; display: inline-block;
+  width: 9px; height: 9px; border-radius: 2px;
+  background: var(--accent); margin-right: 8px;
+  transform: rotate(45deg) translateY(-1px);
+}
+.brand .sub { font-size: 11px; color: var(--header-muted); letter-spacing: 0.12em; }
+.appbar .spacer { flex: 1; }
+.sync { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--header-muted); }
+.badge {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  border: 1px solid currentColor; border-radius: 4px; padding: 1px 8px;
+  color: var(--accent);
+}
+.badge.live { color: #7fdc7f; }
+
+.btn-ghost {
+  background: transparent; color: var(--header-ink);
+  border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 6px;
+  padding: 5px 14px; font-size: 12px; font-family: inherit; cursor: pointer;
+}
+.btn-ghost:hover { border-color: rgba(255, 255, 255, 0.55); }
+.btn-ghost:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn-ghost.dark {
+  color: var(--ink-2); border-color: var(--border);
+}
+.btn-ghost.dark:hover { border-color: var(--muted); }
+
+/* ---------------------------------------------------------------- タブ */
+.tabs { display: flex; gap: 4px; background: var(--header-bg); padding: 0 16px; flex-wrap: wrap; }
+.tab {
+  appearance: none; border: none; background: transparent;
+  color: var(--header-muted); font-family: inherit; font-size: 13px; font-weight: 600;
+  padding: 10px 16px 12px; border-bottom: 2px solid transparent; cursor: pointer;
+}
+.tab:hover { color: var(--header-ink); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tab[aria-selected="true"] { color: var(--header-ink); border-bottom-color: var(--accent); }
+
+.screen { display: none; padding: 20px; }
+.screen.active { display: block; }
+.screen-caption { font-size: 12px; color: var(--ink-2); margin: 0 0 16px; }
+.screen-caption b { color: var(--ink); }
+.footnote { font-size: 12px; color: var(--muted); margin-top: 12px; }
+.footnote b { color: var(--info-text); }
+
+.banner {
+  margin: 0 20px; padding: 10px 14px; border-radius: 8px;
+  font-size: 13px; background: var(--chip-crit-bg); color: var(--crit-text);
+  border: 1px solid var(--border);
+}
+.banner.ok { background: var(--chip-good-bg); color: var(--good-text); }
+.banner.info { background: var(--chip-info-bg); color: var(--info-text); }
+
+/* ---------------------------------------------------------------- 統計タイル */
+.stat-row {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px; margin-bottom: 16px;
+}
+.stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; }
+.stat .label { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; }
+.stat .value { font-size: 26px; font-weight: 700; line-height: 1.25; }
+.stat .value small { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.stat .delta { font-size: 12px; }
+.delta.ok { color: var(--good-text); }
+.delta.bad { color: var(--crit-text); }
+.delta.warn { color: var(--warn-text); }
+.delta.muted { color: var(--muted); }
+
+/* ---------------------------------------------------------------- 機器カード */
+.device-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(430px, 1fr)); gap: 14px; }
+@media (max-width: 560px) { .device-grid { grid-template-columns: 1fr; } }
+.device { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.device-head {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px 16px; border-bottom: 1px solid var(--line);
+}
+.device-head h3 { margin: 0; font-size: 15px; }
+.device-head .model { font-size: 11px; color: var(--muted); font-weight: 400; }
+.device-head .spacer { flex: 1; }
+
+.wan-row { padding: 9px 16px; border-bottom: 1px solid var(--line); }
+.wan-main { display: flex; align-items: center; gap: 8px; }
+.wan-name { font-weight: 700; white-space: nowrap; }
+.wan-carrier { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wan-main .chip { margin-left: auto; }
+.wan-metrics { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; padding-left: 26px; }
+.wan-metrics b { color: var(--ink); font-weight: 600; }
+.device-foot { padding: 10px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); }
+.device-foot .spacer { flex: 1; }
+.device-errors { padding: 8px 16px 12px; font-size: 12px; color: var(--crit-text); }
+
+/* 電波バー */
+.sig { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; flex: none; }
+.sig i { width: 4px; background: var(--line); border-radius: 1px; }
+.sig i:nth-child(1) { height: 5px; }
+.sig i:nth-child(2) { height: 8px; }
+.sig i:nth-child(3) { height: 11px; }
+.sig i:nth-child(4) { height: 14px; }
+.sig.s4 i { background: var(--good); }
+.sig.s3 i:nth-child(-n+3) { background: var(--good); }
+.sig.s2 i:nth-child(-n+2) { background: var(--warn); }
+.sig.s1 i:nth-child(1) { background: var(--crit); }
+
+/* ---------------------------------------------------------------- チップ */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600; border-radius: 999px;
+  padding: 2px 10px; white-space: nowrap;
+}
+.chip .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.chip.ok { background: var(--chip-good-bg); color: var(--good-text); }
+.chip.ok .dot { background: var(--good); }
+.chip.warn { background: var(--chip-warn-bg); color: var(--warn-text); }
+.chip.warn .dot { background: var(--warn); }
+.chip.bad { background: var(--chip-crit-bg); color: var(--crit-text); }
+.chip.bad .dot { background: var(--crit); }
+.chip.info { background: var(--chip-info-bg); color: var(--info-text); }
+.chip.info .dot { background: var(--info); }
+.chip.idle { background: var(--surface-2); color: var(--ink-2); }
+.chip.idle .dot { background: var(--muted); }
+.chip-legend { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+
+/* ---------------------------------------------------------------- ツールバー */
+.toolbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+.lbl { font-size: 11px; color: var(--muted); display: inline-flex; flex-direction: column; gap: 2px; }
+.lbl.chk { flex-direction: row; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); }
+.select {
+  background: var(--surface); border: 1px solid var(--border); color: var(--ink);
+  border-radius: 6px; padding: 7px 10px; font-size: 13px; font-family: inherit; min-width: 150px;
+}
+.select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hint { font-size: 12px; color: var(--muted); }
+.meter-row { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 200px; max-width: 380px; }
+.meter { flex: 1; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.meter > i { display: block; height: 100%; background: var(--good); border-radius: 4px; }
+
+/* ---------------------------------------------------------------- テーブル */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.table-scroll { overflow-x: auto; }
+table.data { width: 100%; border-collapse: collapse; min-width: 820px; }
+table.data th {
+  text-align: left; font-size: 11px; color: var(--muted); font-weight: 600;
+  letter-spacing: 0.06em; padding: 10px 14px; background: var(--surface-2);
+  border-bottom: 1px solid var(--line); white-space: nowrap; position: sticky; top: 0;
+}
+table.data td { padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 13px; vertical-align: top; }
+table.data tr:last-child td { border-bottom: none; }
+table.data td .path { color: var(--muted); font-size: 11px; display: block; font-family: ui-monospace, Consolas, monospace; }
+table.data td .reason { color: var(--muted); font-size: 11.5px; display: block; margin-top: 2px; }
+.val { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 12px; word-break: break-all; }
+.val.empty { color: var(--muted); font-style: italic; font-family: inherit; }
+.ref-link { color: var(--info); text-decoration: none; font-size: 12px; }
+.ref-link:hover { text-decoration: underline; }
+.empty-row { padding: 24px 14px; color: var(--muted); font-size: 13px; text-align: center; }
+
+.fixbtn {
+  background: transparent; border: 1px solid var(--accent-strong); color: var(--accent-strong);
+  border-radius: 6px; font-family: inherit; font-size: 12px; font-weight: 600;
+  padding: 3px 10px; cursor: pointer; white-space: nowrap;
+}
+.fixbtn:hover { background: var(--chip-crit-bg); }
+.fixbtn:disabled { opacity: 0.45; cursor: not-allowed; }
+.fixbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------------------------------------------------------------- エディタ */
+.editor-grid { display: grid; grid-template-columns: 1fr 340px; gap: 14px; align-items: start; }
+@media (max-width: 960px) { .editor-grid { grid-template-columns: 1fr; } }
+.form-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 16px; }
+.form-group h4 { margin: 0 0 10px; font-size: 13px; color: var(--ink); }
+.field { display: grid; grid-template-columns: minmax(180px, 260px) 1fr; gap: 4px 16px; align-items: center; padding: 6px 0; }
+@media (max-width: 640px) { .field { grid-template-columns: 1fr; } }
+.field > label { font-size: 13px; font-weight: 600; }
+.field .help { grid-column: 2; font-size: 11.5px; color: var(--muted); }
+@media (max-width: 640px) { .field .help { grid-column: 1; } }
+.field input[type="text"], .field select {
+  background: var(--surface); border: 1px solid var(--border); color: var(--ink);
+  border-radius: 6px; padding: 7px 10px; font-family: inherit; font-size: 13px;
+  max-width: 360px; width: 100%;
+}
+.field input:focus-visible, .field select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.field.changed > label::after {
+  content: "変更あり"; font-size: 10px; font-weight: 700; color: var(--accent-strong);
+  border: 1px solid currentColor; border-radius: 4px; padding: 0 5px; margin-left: 8px; vertical-align: 1px;
+}
+.field .locked { font-size: 12px; color: var(--muted); }
+
+.diff-panel { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.diff-panel h4 { margin: 0; font-size: 13px; }
+.diff-panel .count { color: var(--accent-strong); }
+.pending-list { display: flex; flex-direction: column; gap: 10px; }
+.diff { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 12px; background: var(--surface-2); }
+.diff .key { font-weight: 700; font-size: 12.5px; }
+.diff .from { color: var(--crit-text); font-family: ui-monospace, Consolas, monospace; }
+.diff .to { color: var(--good-text); font-family: ui-monospace, Consolas, monospace; }
+.diff .impact { color: var(--muted); font-size: 11.5px; margin-top: 4px; }
+.apply-btn {
+  appearance: none; border: none; border-radius: 8px; background: var(--accent-strong); color: #fff;
+  font-family: inherit; font-size: 14px; font-weight: 700; padding: 10px 16px; cursor: pointer;
+}
+.apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.apply-btn:hover:not(:disabled) { filter: brightness(1.06); }
+.apply-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.apply-note { font-size: 11.5px; color: var(--muted); margin: 0; }
