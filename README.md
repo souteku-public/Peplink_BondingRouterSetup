@@ -46,7 +46,18 @@ Web GUI はページ数・項目数が多く、英語表記であるため、本
 
 - 設計構想・アーキテクチャ・API仕様の調査結果: [docs/design/設定管理UI構想.md](docs/design/設定管理UI構想.md)
 
+## 参照資料
+
+本マニュアルは以下の公式資料を参照し、記載内容(項目名・選択肢・公称値)を照合しています。
+
+| 資料 | 用途 |
+|---|---|
+| [MAX Series User Manual (BR2, Firmware 8.3.0)](https://fcc.report/FCC-ID/U8G-P1MT03A/7273669.pdf) | Web GUI の設定項目・選択肢・既定値・公称値の照合(WAN Smoothing 倍率、FEC オーバーヘッド、ヘルスチェック方式、SpeedFusion 使用ポート等) |
+| [Peplink Router API Documentation 8.5.0](https://download.peplink.com/resources/Peplink-Router-API-Documentation-8.5.0.pdf) | 設定管理UI構想における Router API 仕様の確認 |
+| [Firmware 8.5.x リリースノート](https://download.peplink.com/resources/firmware-8.5.3-release-notes.pdf) | 対応機種・機能差分の確認 |
+
 ## 免責
 
 本マニュアルはメーカー公式ドキュメントおよびファームウェア 8.x 系の一般的な画面構成に基づく参考資料です。
-実運用での変更前には必ず設定バックアップを取得し、公式マニュアル・リリースノートも併せて確認してください。
+公式ユーザーマニュアルはファームウェア 8.3.0 世代を照合基準としており、8.4 以降では項目の追加・変更があり得ます。
+実運用での変更前には必ず設定バックアップを取得し、お使いのファームウェアに対応する公式マニュアル・リリースノートも併せて確認してください。
