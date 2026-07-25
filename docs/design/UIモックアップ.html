@@ -1,0 +1,810 @@
+<title>Peplink 設定管理コンソール モックアップ</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f3f4f2;
+    --surface: #fdfdfc;
+    --surface-2: #f7f7f5;
+    --ink: #17181a;
+    --ink-2: #54565b;
+    --muted: #85878c;
+    --line: #e4e5e0;
+    --border: rgba(20, 22, 25, 0.10);
+    --header-bg: #17222f;
+    --header-ink: #eef1f4;
+    --header-muted: #93a1b0;
+    --accent: #e05a24;
+    --accent-strong: #c1461a;
+    --accent-ink: #ffffff;
+    --good: #0ca30c;
+    --good-text: #006300;
+    --warn: #fab219;
+    --warn-text: #7d5a00;
+    --crit: #d03b3b;
+    --crit-text: #a72020;
+    --series-1: #2a78d6;
+    --chip-good-bg: rgba(12, 163, 12, 0.10);
+    --chip-warn-bg: rgba(250, 178, 25, 0.14);
+    --chip-crit-bg: rgba(208, 59, 59, 0.10);
+    --shadow: 0 1px 2px rgba(15, 18, 22, 0.05), 0 4px 14px rgba(15, 18, 22, 0.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --bg: #101113;
+      --surface: #1a1b1d;
+      --surface-2: #212225;
+      --ink: #f1f1ee;
+      --ink-2: #c0c1bb;
+      --muted: #8b8d92;
+      --line: #2b2c2f;
+      --border: rgba(255, 255, 255, 0.10);
+      --header-bg: #131c27;
+      --header-ink: #eef1f4;
+      --header-muted: #8fa0b0;
+      --accent: #e8703f;
+      --accent-strong: #d95926;
+      --accent-ink: #17181a;
+      --good-text: #4cc24c;
+      --warn-text: #e6b83e;
+      --crit-text: #e66767;
+      --series-1: #3987e5;
+      --chip-good-bg: rgba(12, 163, 12, 0.16);
+      --chip-warn-bg: rgba(250, 178, 25, 0.14);
+      --chip-crit-bg: rgba(230, 103, 103, 0.14);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 14px rgba(0, 0, 0, 0.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #101113;
+    --surface: #1a1b1d;
+    --surface-2: #212225;
+    --ink: #f1f1ee;
+    --ink-2: #c0c1bb;
+    --muted: #8b8d92;
+    --line: #2b2c2f;
+    --border: rgba(255, 255, 255, 0.10);
+    --header-bg: #131c27;
+    --header-ink: #eef1f4;
+    --header-muted: #8fa0b0;
+    --accent: #e8703f;
+    --accent-strong: #d95926;
+    --accent-ink: #17181a;
+    --good-text: #4cc24c;
+    --warn-text: #e6b83e;
+    --crit-text: #e66767;
+    --series-1: #3987e5;
+    --chip-good-bg: rgba(12, 163, 12, 0.16);
+    --chip-warn-bg: rgba(250, 178, 25, 0.14);
+    --chip-crit-bg: rgba(230, 103, 103, 0.14);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 14px rgba(0, 0, 0, 0.3);
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #f3f4f2;
+    --surface: #fdfdfc;
+    --surface-2: #f7f7f5;
+    --ink: #17181a;
+    --ink-2: #54565b;
+    --muted: #85878c;
+    --line: #e4e5e0;
+    --border: rgba(20, 22, 25, 0.10);
+    --header-bg: #17222f;
+    --header-ink: #eef1f4;
+    --header-muted: #93a1b0;
+    --accent: #e05a24;
+    --accent-strong: #c1461a;
+    --accent-ink: #ffffff;
+    --good-text: #006300;
+    --warn-text: #7d5a00;
+    --crit-text: #a72020;
+    --series-1: #2a78d6;
+    --chip-good-bg: rgba(12, 163, 12, 0.10);
+    --chip-warn-bg: rgba(250, 178, 25, 0.14);
+    --chip-crit-bg: rgba(208, 59, 59, 0.10);
+    --shadow: 0 1px 2px rgba(15, 18, 22, 0.05), 0 4px 14px rgba(15, 18, 22, 0.05);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", Meiryo, system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .frame { max-width: 1180px; margin: 0 auto; padding: 20px 20px 56px; }
+
+  .mock-note {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--ink-2);
+    border: 1px dashed var(--border);
+    background: var(--surface-2);
+    border-radius: 6px;
+    padding: 8px 14px; margin-bottom: 16px;
+  }
+  .mock-note strong { color: var(--accent-strong); letter-spacing: 0.08em; }
+  :root[data-theme="dark"] .mock-note strong { color: var(--accent); }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .mock-note strong { color: var(--accent); }
+  }
+
+  /* ===== App shell ===== */
+  .app {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+  .appbar {
+    background: var(--header-bg);
+    color: var(--header-ink);
+    display: flex; align-items: center; gap: 18px;
+    padding: 12px 20px;
+    flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand .logo {
+    font-weight: 700; font-size: 15px; letter-spacing: 0.02em;
+  }
+  .brand .logo::before {
+    content: "";
+    display: inline-block;
+    width: 9px; height: 9px; border-radius: 2px;
+    background: var(--accent);
+    margin-right: 8px;
+    transform: rotate(45deg) translateY(-1px);
+  }
+  .brand .sub { font-size: 11px; color: var(--header-muted); letter-spacing: 0.12em; }
+  .appbar .spacer { flex: 1; }
+  .sync {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 12px; color: var(--header-muted);
+  }
+  .sync .btn-sync {
+    background: transparent; color: var(--header-ink);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 6px; padding: 5px 14px;
+    font-size: 12px; font-family: inherit; cursor: pointer;
+  }
+  .sync .btn-sync:hover { border-color: rgba(255,255,255,0.55); }
+  .sync .btn-sync:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ===== Tabs ===== */
+  .tabs {
+    display: flex; gap: 4px;
+    background: var(--header-bg);
+    padding: 0 16px;
+  }
+  .tab {
+    appearance: none; border: none; background: transparent;
+    color: var(--header-muted);
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    padding: 10px 16px 12px;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+  }
+  .tab:hover { color: var(--header-ink); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .tab[aria-selected="true"] {
+    color: var(--header-ink);
+    border-bottom-color: var(--accent);
+  }
+  .screen { display: none; padding: 20px; background: var(--bg); }
+  .screen.active { display: block; }
+
+  .screen-caption {
+    font-size: 12px; color: var(--ink-2);
+    margin: 0 0 16px;
+  }
+  .screen-caption b { color: var(--ink); }
+
+  /* ===== Stat tiles ===== */
+  .stat-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px; margin-bottom: 16px;
+  }
+  .stat {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 16px;
+  }
+  .stat .label { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; }
+  .stat .value { font-size: 26px; font-weight: 700; line-height: 1.25; }
+  .stat .value small { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+  .stat .delta { font-size: 12px; }
+  .delta.ok { color: var(--good-text); }
+  .delta.bad { color: var(--crit-text); }
+  .delta.warn { color: var(--warn-text); }
+
+  /* ===== Device cards ===== */
+  .device-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 14px;
+  }
+  @media (max-width: 560px) { .device-grid { grid-template-columns: 1fr; } }
+  .device {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+  .device-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px; border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+  .device-head h3 { margin: 0; font-size: 15px; }
+  .device-head .model { font-size: 11px; color: var(--muted); }
+  .device-head .spacer { flex: 1; }
+  .wan-list { display: flex; flex-direction: column; }
+  .wan-row { padding: 9px 16px; border-bottom: 1px solid var(--line); }
+  .wan-main { display: flex; align-items: center; gap: 8px; }
+  .wan-name { font-weight: 700; white-space: nowrap; }
+  .wan-carrier { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wan-main .chip { margin-left: auto; }
+  .wan-metrics {
+    font-size: 12px; color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+    padding-left: 26px; margin-top: 1px;
+  }
+  .wan-metrics b { color: var(--ink); font-weight: 600; }
+  .device-foot {
+    display: flex; align-items: center; gap: 16px;
+    padding: 10px 16px; flex-wrap: wrap;
+  }
+  .spark-label { font-size: 11px; color: var(--muted); }
+  .device-foot svg { display: block; }
+  .device-foot .spacer { flex: 1; }
+
+  /* Status chips: icon + label, never color alone */
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600;
+    border-radius: 999px; padding: 2px 10px;
+    white-space: nowrap;
+  }
+  .chip .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .chip.ok   { background: var(--chip-good-bg); color: var(--good-text); }
+  .chip.ok .dot { background: var(--good); }
+  .chip.warn { background: var(--chip-warn-bg); color: var(--warn-text); }
+  .chip.warn .dot { background: var(--warn); }
+  .chip.bad  { background: var(--chip-crit-bg); color: var(--crit-text); }
+  .chip.bad .dot { background: var(--crit); }
+  .chip.idle { background: var(--surface-2); color: var(--ink-2); }
+  .chip.idle .dot { background: var(--muted); }
+
+  /* Signal bars */
+  .sig { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; margin-right: 6px; }
+  .sig i { width: 4px; background: var(--line); border-radius: 1px; }
+  .sig i:nth-child(1) { height: 5px; } .sig i:nth-child(2) { height: 8px; }
+  .sig i:nth-child(3) { height: 11px; } .sig i:nth-child(4) { height: 14px; }
+  .sig.s4 i { background: var(--good); }
+  .sig.s3 i:nth-child(-n+3) { background: var(--good); }
+  .sig.s2 i:nth-child(-n+2) { background: var(--warn); }
+  .sig.s1 i:nth-child(1) { background: var(--crit); }
+
+  /* ===== Audit screen ===== */
+  .toolbar {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .select-mock, .toolbar .search {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 7px 12px; font-size: 13px;
+    color: var(--ink); font-family: inherit;
+  }
+  .toolbar .hint { font-size: 12px; color: var(--muted); }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+  .table-scroll { overflow-x: auto; }
+  table.audit { width: 100%; border-collapse: collapse; min-width: 760px; }
+  table.audit th {
+    text-align: left; font-size: 11px; color: var(--muted);
+    letter-spacing: 0.06em; font-weight: 600;
+    padding: 10px 14px; border-bottom: 1px solid var(--line);
+    background: var(--surface-2);
+    white-space: nowrap;
+  }
+  table.audit td {
+    padding: 10px 14px; border-bottom: 1px solid var(--line);
+    font-size: 13px; vertical-align: top;
+  }
+  table.audit tr:last-child td { border-bottom: none; }
+  td.mono, .diff code { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 12px; }
+  td .path { color: var(--muted); font-size: 11px; display: block; }
+  .man-link { color: var(--series-1); text-decoration: none; font-size: 12px; }
+  .man-link:hover { text-decoration: underline; }
+  .fixbtn {
+    background: transparent; border: 1px solid var(--accent-strong);
+    color: var(--accent-strong); border-radius: 6px;
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    padding: 3px 10px; cursor: pointer; white-space: nowrap;
+  }
+  .fixbtn:hover { background: var(--chip-crit-bg); }
+  .fixbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  :root[data-theme="dark"] .fixbtn { border-color: var(--accent); color: var(--accent); }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .fixbtn { border-color: var(--accent); color: var(--accent); }
+  }
+
+  /* compliance meter */
+  .meter-row { display: flex; align-items: center; gap: 10px; }
+  .meter {
+    flex: 1; height: 8px; border-radius: 4px; background: var(--line);
+    overflow: hidden; min-width: 80px;
+  }
+  .meter > i { display: block; height: 100%; background: var(--good); border-radius: 4px; }
+
+  /* ===== Editor screen ===== */
+  .editor-grid {
+    display: grid; grid-template-columns: 200px 1fr 320px; gap: 14px;
+    align-items: start;
+  }
+  @media (max-width: 960px) { .editor-grid { grid-template-columns: 1fr; } }
+  .side-nav { display: flex; flex-direction: column; gap: 2px; padding: 8px; }
+  .side-nav a {
+    display: block; padding: 7px 12px; border-radius: 6px;
+    color: var(--ink-2); text-decoration: none; font-size: 13px;
+  }
+  .side-nav a:hover { background: var(--surface-2); color: var(--ink); }
+  .side-nav a.current {
+    background: var(--surface-2); color: var(--ink); font-weight: 700;
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+  .form-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 18px; }
+  .form-body h4 { margin: 0; font-size: 14px; }
+  .form-body .section-note { font-size: 12px; color: var(--muted); margin: -12px 0 0; }
+  .field { display: grid; grid-template-columns: 190px 1fr; gap: 4px 16px; align-items: center; }
+  @media (max-width: 640px) { .field { grid-template-columns: 1fr; } }
+  .field > label { font-size: 13px; font-weight: 600; }
+  .field .help {
+    grid-column: 2; font-size: 11.5px; color: var(--muted);
+  }
+  @media (max-width: 640px) { .field .help { grid-column: 1; } }
+  .field select, .field input[type="text"] {
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--ink); border-radius: 6px; padding: 7px 10px;
+    font-family: inherit; font-size: 13px; max-width: 340px; width: 100%;
+  }
+  .field select:focus-visible, .field input:focus-visible,
+  .select-mock:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .field.changed > label::after {
+    content: "変更あり";
+    font-size: 10px; font-weight: 700; color: var(--accent-strong);
+    border: 1px solid currentColor; border-radius: 4px;
+    padding: 0 5px; margin-left: 8px; vertical-align: 1px;
+  }
+  :root[data-theme="dark"] .field.changed > label::after { color: var(--accent); }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .field.changed > label::after { color: var(--accent); }
+  }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .seg button {
+    appearance: none; border: none; background: var(--surface);
+    color: var(--ink-2); font-family: inherit; font-size: 12.5px;
+    padding: 6px 14px; cursor: pointer;
+    border-right: 1px solid var(--border);
+  }
+  .seg button:last-child { border-right: none; }
+  .seg button[aria-pressed="true"] {
+    background: var(--accent); color: var(--accent-ink); font-weight: 700;
+  }
+
+  .diff-panel { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .diff-panel h4 { margin: 0; font-size: 13px; }
+  .diff-panel .count { color: var(--accent-strong); }
+  :root[data-theme="dark"] .diff-panel .count { color: var(--accent); }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .diff-panel .count { color: var(--accent); }
+  }
+  .diff {
+    border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 12px; font-size: 12px; background: var(--surface-2);
+  }
+  .diff .key { font-weight: 700; font-size: 12.5px; }
+  .diff .from { color: var(--crit-text); }
+  .diff .to { color: var(--good-text); }
+  .diff .impact { color: var(--muted); font-size: 11.5px; margin-top: 4px; }
+  .apply-btn {
+    appearance: none; border: none; border-radius: 8px;
+    background: var(--accent-strong); color: #fff;
+    font-family: inherit; font-size: 14px; font-weight: 700;
+    padding: 10px 16px; cursor: pointer;
+  }
+  :root[data-theme="dark"] .apply-btn { background: var(--accent); color: var(--accent-ink); }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .apply-btn { background: var(--accent); color: var(--accent-ink); }
+  }
+  .apply-btn:hover { filter: brightness(1.06); }
+  .apply-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .apply-note { font-size: 11.5px; color: var(--muted); }
+
+  /* explanation blocks under the shell */
+  .legend {
+    margin-top: 22px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .legend .item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 16px; font-size: 12.5px; color: var(--ink-2);
+  }
+  .legend .item b { color: var(--ink); display: block; margin-bottom: 2px; font-size: 13px; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .screen.active { animation: fade 0.18s ease-out; }
+    @keyframes fade { from { opacity: 0.4; } to { opacity: 1; } }
+  }
+</style>
+
+<div class="frame">
+  <p class="mock-note"><strong>MOCKUP</strong> 画面イメージ(モックアップ)です。表示中のデータはすべて架空のサンプルで、実機とは接続していません。タブで3画面を切り替えられます。</p>
+
+  <div class="app">
+    <div class="appbar">
+      <div class="brand">
+        <span class="logo">Bonding Fleet Console</span>
+        <span class="sub">PEPLINK 設定管理(仮称)</span>
+      </div>
+      <div class="spacer"></div>
+      <div class="sync">
+        <span>最終同期 2026-07-25 10:42(Router API / 読み取り専用トークン)</span>
+        <button class="btn-sync" type="button">今すぐ同期</button>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="画面切り替え">
+      <button class="tab" role="tab" id="tab-1" aria-selected="true" aria-controls="screen-1" type="button">① フリートダッシュボード</button>
+      <button class="tab" role="tab" id="tab-2" aria-selected="false" aria-controls="screen-2" type="button">② 設定監査(正誤判定)</button>
+      <button class="tab" role="tab" id="tab-3" aria-selected="false" aria-controls="screen-3" type="button">③ 設定エディタ</button>
+    </div>
+
+    <!-- ================= Screen 1: Fleet dashboard ================= -->
+    <section class="screen active" id="screen-1" role="tabpanel" aria-labelledby="tab-1">
+      <p class="screen-caption"><b>全機器のいまを1画面で。</b> Router APIから吸い上げた状態を機器カードで一覧します。異常と設定不一致は赤で浮き上がります。</p>
+
+      <div class="stat-row">
+        <div class="stat">
+          <div class="label">オンライン機器</div>
+          <div class="value">2<small> / 2台</small></div>
+          <div class="delta ok">✓ 全機応答あり</div>
+        </div>
+        <div class="stat">
+          <div class="label">接続中WAN</div>
+          <div class="value">5<small> / 6回線</small></div>
+          <div class="delta warn">△ 有線WAN 1回線が待機</div>
+        </div>
+        <div class="stat">
+          <div class="label">SpeedFusion トンネル</div>
+          <div class="value">2<small> / 2本</small></div>
+          <div class="delta ok">✓ すべて確立</div>
+        </div>
+        <div class="stat">
+          <div class="label">設定監査 適合率</div>
+          <div class="value">86<small> %</small></div>
+          <div class="delta bad">✕ 不一致 3件(要対応 2件)</div>
+        </div>
+      </div>
+
+      <div class="device-grid">
+        <!-- Device 1 -->
+        <article class="device">
+          <div class="device-head">
+            <div>
+              <h3>中継車1号 <span class="model">MAX BR2 Pro / FW 8.5.4 / S/N 1927-XXXX</span></h3>
+            </div>
+            <div class="spacer"></div>
+            <span class="chip ok"><span class="dot"></span>✓ 監査 適合 96%</span>
+          </div>
+          <div class="wan-list">
+            <div class="wan-row">
+              <div class="wan-main">
+                <span class="sig s4"><i></i><i></i><i></i><i></i></span>
+                <span class="wan-name">Cellular 1</span>
+                <span class="wan-carrier">NTT docomo / SIM A</span>
+                <span class="chip ok"><span class="dot"></span>✓ 接続中 (P1)</span>
+              </div>
+              <div class="wan-metrics">RSRP −84 dBm ・ SINR 18 dB ・ <b>↓ 118 Mbps</b></div>
+            </div>
+            <div class="wan-row">
+              <div class="wan-main">
+                <span class="sig s3"><i></i><i></i><i></i><i></i></span>
+                <span class="wan-name">Cellular 2</span>
+                <span class="wan-carrier">KDDI / SIM A</span>
+                <span class="chip ok"><span class="dot"></span>✓ 接続中 (P1)</span>
+              </div>
+              <div class="wan-metrics">RSRP −93 dBm ・ SINR 11 dB ・ <b>↓ 64 Mbps</b></div>
+            </div>
+            <div class="wan-row">
+              <div class="wan-main">
+                <span class="wan-name" style="padding-left:26px;">有線WAN</span>
+                <span class="wan-carrier">会館ネット回線</span>
+                <span class="chip idle"><span class="dot"></span>待機 (P2・接続維持)</span>
+              </div>
+              <div class="wan-metrics">ヘルスチェック OK ・ トラフィックなし</div>
+            </div>
+          </div>
+          <div class="device-foot">
+            <div>
+              <div class="spark-label">SpeedFusion 合算スループット(直近30分)</div>
+              <svg width="220" height="44" viewBox="0 0 220 44" role="img" aria-label="スループット推移の折れ線グラフ。おおむね150から190Mbpsで安定">
+                <polyline fill="none" stroke="var(--line)" stroke-width="1" points="0,40 220,40"></polyline>
+                <polygon fill="var(--series-1)" opacity="0.12" points="0,18 20,16 40,20 60,14 80,15 100,12 120,16 140,13 160,10 180,12 200,9 220,11 220,40 0,40"></polygon>
+                <polyline fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round" points="0,18 20,16 40,20 60,14 80,15 100,12 120,16 140,13 160,10 180,12 200,9 220,11"></polyline>
+                <circle cx="220" cy="11" r="3" fill="var(--series-1)"></circle>
+              </svg>
+            </div>
+            <div class="spacer"></div>
+            <span class="chip ok"><span class="dot"></span>✓ トンネル確立・回線2本参加</span>
+          </div>
+        </article>
+
+        <!-- Device 2 -->
+        <article class="device">
+          <div class="device-head">
+            <div>
+              <h3>中継車2号 <span class="model">MAX Transit Pro Duo / FW 8.5.3 / S/N 2833-XXXX</span></h3>
+            </div>
+            <div class="spacer"></div>
+            <span class="chip bad"><span class="dot"></span>✕ 監査 不一致 3件</span>
+          </div>
+          <div class="wan-list">
+            <div class="wan-row">
+              <div class="wan-main">
+                <span class="sig s3"><i></i><i></i><i></i><i></i></span>
+                <span class="wan-name">Cellular 1</span>
+                <span class="wan-carrier">CAT-7 / SoftBank / SIM A</span>
+                <span class="chip ok"><span class="dot"></span>✓ 接続中 (P1)</span>
+              </div>
+              <div class="wan-metrics">RSRP −96 dBm ・ SINR 9 dB ・ <b>↓ 42 Mbps</b></div>
+            </div>
+            <div class="wan-row">
+              <div class="wan-main">
+                <span class="sig s2"><i></i><i></i><i></i><i></i></span>
+                <span class="wan-name">Cellular 2</span>
+                <span class="wan-carrier">CAT-12 / NTT docomo / SIM B</span>
+                <span class="chip warn"><span class="dot"></span>△ 電波弱・要確認</span>
+              </div>
+              <div class="wan-metrics">RSRP −105 dBm ・ SINR 3 dB ・ <b>↓ 11 Mbps</b></div>
+            </div>
+            <div class="wan-row">
+              <div class="wan-main">
+                <span class="wan-name" style="padding-left:26px;">Wi-Fi WAN</span>
+                <span class="wan-carrier">未設定</span>
+                <span class="chip idle"><span class="dot"></span>無効</span>
+              </div>
+              <div class="wan-metrics">—</div>
+            </div>
+          </div>
+          <div class="device-foot">
+            <div>
+              <div class="spark-label">SpeedFusion 合算スループット(直近30分)</div>
+              <svg width="220" height="44" viewBox="0 0 220 44" role="img" aria-label="スループット推移の折れ線グラフ。後半に40Mbps付近まで低下">
+                <polyline fill="none" stroke="var(--line)" stroke-width="1" points="0,40 220,40"></polyline>
+                <polygon fill="var(--series-1)" opacity="0.12" points="0,14 20,15 40,13 60,16 80,14 100,18 120,22 140,20 160,26 180,28 200,25 220,27 220,40 0,40"></polygon>
+                <polyline fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round" points="0,14 20,15 40,13 60,16 80,14 100,18 120,22 140,20 160,26 180,28 200,25 220,27"></polyline>
+                <circle cx="220" cy="27" r="3" fill="var(--series-1)"></circle>
+              </svg>
+            </div>
+            <div class="spacer"></div>
+            <span class="chip warn"><span class="dot"></span>△ Cellular 2 が Latency Cutoff で一時除外</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ================= Screen 2: Audit ================= -->
+    <section class="screen" id="screen-2" role="tabpanel" aria-labelledby="tab-2">
+      <p class="screen-caption"><b>「あるべき値」との突合結果。</b> ゴールデンコンフィグ(運用プロファイル)と機器の現在値を項目ごとに比較し、✕の行だけ直せば正しい状態に戻せます。</p>
+
+      <div class="toolbar">
+        <select class="select-mock" aria-label="機器の選択">
+          <option>中継車2号(MAX Transit Pro Duo)</option>
+          <option>中継車1号(MAX BR2 Pro)</option>
+        </select>
+        <select class="select-mock" aria-label="プロファイルの選択">
+          <option>プロファイル: ライブ中継(live-broadcast)</option>
+          <option>プロファイル: 固定拠点バックアップ</option>
+        </select>
+        <div class="meter-row" style="min-width:220px; flex:1; max-width:360px;">
+          <div class="meter" role="img" aria-label="適合率 86パーセント"><i style="width:86%"></i></div>
+          <span style="font-size:12px; color:var(--ink-2); white-space:nowrap;">適合 24 / 28項目</span>
+        </div>
+        <span class="hint">吸い上げ: 2026-07-25 10:42</span>
+      </div>
+
+      <div class="card">
+        <div class="table-scroll">
+          <table class="audit">
+            <thead>
+              <tr>
+                <th style="width:110px;">判定</th>
+                <th>設定項目</th>
+                <th>期待値(プロファイル)</th>
+                <th>現在値(機器)</th>
+                <th>根拠マニュアル</th>
+                <th style="width:110px;">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="chip bad"><span class="dot"></span>✕ 不一致</span></td>
+                <td>WAN Smoothing(映像用サブトンネル)<span class="path">speedfusion.profile[main].sub[video].wan_smoothing</span></td>
+                <td class="mono">medium 〜 high</td>
+                <td class="mono">off</td>
+                <td><a class="man-link" href="#" onclick="return false;">05 SpeedFusion §4</a></td>
+                <td><button class="fixbtn" type="button">期待値へ修正</button></td>
+              </tr>
+              <tr>
+                <td><span class="chip bad"><span class="dot"></span>✕ 不一致</span></td>
+                <td>Cellular 2 / SIM B の APN<span class="path">wan.cellular2.sim_b.apn</span></td>
+                <td class="mono">設定済みであること</td>
+                <td class="mono">(未設定)</td>
+                <td><a class="man-link" href="#" onclick="return false;">04 セルラー §2</a></td>
+                <td><button class="fixbtn" type="button">期待値へ修正</button></td>
+              </tr>
+              <tr>
+                <td><span class="chip bad"><span class="dot"></span>✕ 不一致</span></td>
+                <td>データ上限超過時の動作(Cellular 1)<span class="path">wan.cellular1.allowance.action</span></td>
+                <td class="mono">notify_only(本番中の自動切断禁止)</td>
+                <td class="mono">disconnect</td>
+                <td><a class="man-link" href="#" onclick="return false;">03 WAN設定 §3</a></td>
+                <td><button class="fixbtn" type="button">期待値へ修正</button></td>
+              </tr>
+              <tr>
+                <td><span class="chip warn"><span class="dot"></span>△ 要確認</span></td>
+                <td>申告帯域(Cellular 2 上り)<span class="path">wan.cellular2.upload_bandwidth</span></td>
+                <td class="mono">実測の80%目安(直近実測 18 Mbps)</td>
+                <td class="mono">50 Mbps(乖離大)</td>
+                <td><a class="man-link" href="#" onclick="return false;">03 WAN設定 §6</a></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td><span class="chip ok"><span class="dot"></span>✓ 一致</span></td>
+                <td>ヘルスチェック方式(Cellular 1/2)<span class="path">wan.cellular*.health_check.method</span></td>
+                <td class="mono">smartcheck</td>
+                <td class="mono">smartcheck</td>
+                <td><a class="man-link" href="#" onclick="return false;">03 WAN設定 §2</a></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td><span class="chip ok"><span class="dot"></span>✓ 一致</span></td>
+                <td>待機時の接続維持(全セルラー)<span class="path">wan.cellular*.standby_state</span></td>
+                <td class="mono">remain_connected</td>
+                <td class="mono">remain_connected</td>
+                <td><a class="man-link" href="#" onclick="return false;">03 WAN設定 §1</a></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td><span class="chip ok"><span class="dot"></span>✓ 一致</span></td>
+                <td>トンネル暗号化<span class="path">speedfusion.profile[main].encryption</span></td>
+                <td class="mono">aes_256</td>
+                <td class="mono">aes_256</td>
+                <td><a class="man-link" href="#" onclick="return false;">05 SpeedFusion §1</a></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td><span class="chip ok"><span class="dot"></span>✓ 一致</span></td>
+                <td>管理画面のWAN側公開<span class="path">system.admin.wan_access</span></td>
+                <td class="mono">disabled</td>
+                <td class="mono">disabled</td>
+                <td><a class="man-link" href="#" onclick="return false;">09 システム §1</a></td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Screen 3: Editor ================= -->
+    <section class="screen" id="screen-3" role="tabpanel" aria-labelledby="tab-3">
+      <p class="screen-caption"><b>迷わない設定変更。</b> マニュアルと同じ機能領域の並びで、日本語ラベル+入力チェック付き。変更は右の差分プレビューに溜まり、「Apply」を押すまで機器に反映されません(実機のSave→Applyと同じ2段階)。</p>
+
+      <div class="editor-grid">
+        <nav class="card side-nav" aria-label="設定カテゴリ">
+          <a href="#" onclick="return false;">WAN・優先度</a>
+          <a href="#" onclick="return false;" class="current">セルラー</a>
+          <a href="#" onclick="return false;">SpeedFusion</a>
+          <a href="#" onclick="return false;">LAN・VLAN</a>
+          <a href="#" onclick="return false;">アウトバウンドポリシー</a>
+          <a href="#" onclick="return false;">Wi-Fi(AP)</a>
+          <a href="#" onclick="return false;">通知・監視</a>
+        </nav>
+
+        <div class="card">
+          <div class="form-body">
+            <h4>中継車2号 › セルラー › Cellular 2(CAT-12)</h4>
+            <p class="section-note">機器の現在値を読み込み済み。ヘルプ文は同梱マニュアルの該当章から表示しています。</p>
+
+            <div class="field">
+              <label for="f-sim">使用するSIMスロット</label>
+              <div class="seg" id="f-sim" role="group" aria-label="使用するSIMスロット">
+                <button type="button" aria-pressed="true">両方(自動切替)</button>
+                <button type="button" aria-pressed="false">SIM Aのみ</button>
+                <button type="button" aria-pressed="false">SIM Bのみ</button>
+              </div>
+              <span class="help">片方が圏外・上限到達のとき自動でもう一方へ切替(切替時に数十秒の再接続断)— 04章 §1</span>
+            </div>
+
+            <div class="field changed">
+              <label for="f-apn">SIM B の APN</label>
+              <input type="text" id="f-apn" value="lte-x.example.jp" />
+              <span class="help">未設定だとSIM Bへの切替時に接続不能。監査✕の項目です — 04章 §2</span>
+            </div>
+
+            <div class="field">
+              <label for="f-band">バンド固定</label>
+              <select id="f-band">
+                <option selected>自動(全バンド)— 移動運用の推奨</option>
+                <option>手動選択…</option>
+              </select>
+              <span class="help">固定したまま移動すると圏外の原因に。常設場所の電波調査時のみ手動 — 04章 §3</span>
+            </div>
+
+            <div class="field changed">
+              <label for="f-hc">ヘルスチェック</label>
+              <select id="f-hc">
+                <option selected>SmartCheck(推奨)</option>
+                <option>無効 — ⚠ フェイルオーバーしなくなります</option>
+              </select>
+              <span class="help">セルラーで選べるのはこの2択。無効は原則使用しない — 03章 §2</span>
+            </div>
+
+            <div class="field">
+              <label for="f-allow">月間データ上限 / 超過時</label>
+              <select id="f-allow">
+                <option selected>100 GB / 通知のみ(切断しない)</option>
+                <option>100 GB / 自動切断</option>
+                <option>監視しない</option>
+              </select>
+              <span class="help">本番中の自動切断は事故のもと。プロファイル「ライブ中継」は通知のみを要求 — 03章 §3</span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="card diff-panel" aria-label="保留中の変更">
+          <h4>保留中の変更 <span class="count">2件</span>(未反映)</h4>
+          <div class="diff">
+            <span class="key">SIM B の APN</span><br />
+            <code class="from">− (未設定)</code><br />
+            <code class="to">+ lte-x.example.jp</code>
+            <div class="impact">影響: 中 — 反映時にCellular 2が再接続(約30秒)</div>
+          </div>
+          <div class="diff">
+            <span class="key">ヘルスチェック方式</span><br />
+            <code class="from">− 無効</code><br />
+            <code class="to">+ SmartCheck</code>
+            <div class="impact">影響: 低 — 通信断なし。障害検知が有効になります</div>
+          </div>
+          <button class="apply-btn" type="button">機器に反映する(Apply)</button>
+          <p class="apply-note">反映内容と実行者は監査ログに記録されます。反映前に自動で設定バックアップを取得します。</p>
+        </aside>
+      </div>
+    </section>
+  </div>
+
+  <div class="legend">
+    <div class="item"><b>① フリートダッシュボード</b>2台の機器・6回線・トンネルの状態を1画面に集約。Web GUIでは機器ごと×ページごとに見に行く情報を、読み取り専用APIで自動収集して並べます。</div>
+    <div class="item"><b>② 設定監査(正誤判定)</b>運用プロファイル(あるべき値)と実機の現在値を突合し、✓/△/✕で表示。各行から根拠マニュアルの章へ直接ジャンプでき、「期待値へ修正」で是正案を差分に積めます。</div>
+    <div class="item"><b>③ 設定エディタ</b>頻繁に触る項目だけを日本語ラベル+ヘルプ付きで編集。危険な選択肢には警告を添え、変更は差分プレビューで確認してからApply。実機と同じ2段階適用を踏襲します。</div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var tabs = document.querySelectorAll('.tab');
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        tabs.forEach(function (t) {
+          t.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+          document.getElementById(t.getAttribute('aria-controls'))
+            .classList.toggle('active', t === tab);
+        });
+      });
+    });
+  })();
+</script>
