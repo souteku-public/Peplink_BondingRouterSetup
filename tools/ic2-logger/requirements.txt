@@ -1,0 +1,4 @@
+# InControl2 SpeedFusion ロガーの依存パッケージ
+# 本体は Python 標準ライブラリのみで動作します。設定ファイル(YAML)の
+# 読み込みにだけ PyYAML を使用します。
+PyYAML>=5.4

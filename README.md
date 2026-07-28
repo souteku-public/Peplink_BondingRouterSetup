@@ -59,6 +59,21 @@ python3 run.py --demo          # 実機なしで画面を確認できます
 > アウトバウンドポリシー、ファイアウォールなど)。全一覧は
 > [ツールのREADME「操作できない設定項目」](tools/peplink-console/README.md#操作できない設定項目) を参照してください。
 
+## InControl2 SpeedFusion ロガー(実装済みツール)
+
+クラウド管理サービス InControl2 から、SpeedFusionタブ相当の回線別データ
+(WAN別スループット・遅延・ドロップ)を取得し、**更新されたタイミングだけCSVに記録**する
+独立アプリケーションです(設定管理コンソールとは別に単体で動作します)。
+
+```bash
+cd tools/ic2-logger
+python3 -m pip install -r requirements.txt
+python3 run.py --demo          # InControl2に接続せず動作確認
+```
+
+- **導入手順・InControl2側の認証設定・出力形式**: [tools/ic2-logger/README.md](tools/ic2-logger/README.md)
+- 機器から直接さらに高頻度で取る方式の調査: [docs/design/高頻度スループット記録_調査.md](docs/design/高頻度スループット記録_調査.md)
+
 ## 参照資料
 
 本マニュアルは以下の公式資料を参照し、記載内容(項目名・選択肢・公称値)を照合しています。

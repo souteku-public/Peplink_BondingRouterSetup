@@ -1,0 +1,35 @@
+# ============================================================================
+# InControl2 SpeedFusion ロガー 設定
+# ============================================================================
+# このファイルを config.yaml という名前でコピーして編集してください。
+#     cp config.example.yaml config.yaml
+# config.yaml は .gitignore で除外されています(認証情報はGitに入りません)。
+# ============================================================================
+
+# InControl2 の「Client Application」で発行した認証情報(README 手順1)
+client_id: ここにClient IDを貼る
+client_secret: ここにClient Secretを貼る
+
+# InControl2 Virtual Appliance(自社設置版)を使っている場合のみ変更
+# api_base: https://api.ic.peplink.com
+
+# 記録対象。IDが分からない場合は先に `python3 run.py --list` を実行してください
+organization_id: ここに組織ID
+group_id: ここにグループID
+devices:
+  - id: 12345               # --list で表示される device_id
+    label: 中継車1号          # 出力ファイル名に使う名前(省略時はS/N)
+  - id: 67890
+    label: 中継車2号
+
+# ポーリング間隔(秒)。機器統計の更新はおおむね10秒前後のため、
+# 3〜5秒で取りこぼしなく追従できます(更新が無い間は記録されません)
+interval: 5
+
+# 出力先ディレクトリ(機器×日付ごとにファイルが作られます)
+output_dir: logs
+
+# 出力形式: csv(集計済みの1行形式) / jsonl(APIの生データ。解析用)
+formats:
+  - csv
+  # - jsonl

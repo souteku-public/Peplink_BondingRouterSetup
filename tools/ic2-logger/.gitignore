@@ -1,0 +1,10 @@
+# 認証情報を含むためコミットしない
+config.yaml
+config.*.yaml
+!config.example.yaml
+
+# 記録データ
+logs/
+
+__pycache__/
+*.pyc
