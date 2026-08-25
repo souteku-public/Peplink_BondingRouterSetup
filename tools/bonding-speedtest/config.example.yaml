@@ -1,0 +1,52 @@
+# ============================================================================
+# ボンディング回線スループット測定 設定
+# ============================================================================
+# このファイルを config.yaml という名前でコピーして編集してください。
+#     cp config.example.yaml config.yaml
+#
+# 補足: ボンディング測定だけなら config.yaml 無しでも動きます(既定値で実行)。
+# 回線ごとの測定(--per-wan)を使う場合のみ router セクションが必須です。
+# ============================================================================
+
+# ---------------------------------------------------------------- 測定パラメータ
+duration: 12          # 1方向あたりの測定秒数
+streams: 8            # 並列コネクション数(回線を飽和させるために複数必要)
+# upload_streams: 8   # 上りだけ並列数を変える場合
+# limit_mb: 500       # 1方向あたりのデータ量上限(MB)。従量SIMの保護用
+
+# ---------------------------------------------------------------- 測定先
+# 既定はCloudflareの速度テストエンドポイント。
+# 自社サーバーを測定先にする場合は、サーバー側で `python3 run.py --serve` を実行し、
+# 以下をそのサーバーに向けてください(SpeedFusionトンネル越しの測定が可能になります)。
+targets:
+  download_url: https://speed.cloudflare.com/__down?bytes={bytes}
+  upload_url: https://speed.cloudflare.com/__up
+  rtt_host: speed.cloudflare.com
+  rtt_port: 443
+  # --- 自社リフレクターの例 ---
+  # download_url: http://203.0.113.10:8123/__down?bytes={bytes}
+  # upload_url: http://203.0.113.10:8123/__up
+  # rtt_host: 203.0.113.10
+  # rtt_port: 8123
+
+# verify_tls: true    # 自己署名証明書の測定先を使う場合は false
+# use_proxy: false    # 既定はプロキシを使わず直接接続
+
+# ---------------------------------------------------------------- 出力
+output_dir: results
+
+# ---------------------------------------------------------------- 回線ごとの測定(--per-wan)
+# 測定対象PCが接続している Peplink ルーターの情報。
+# WAN優先度を一時的に切り替えるため、Read-Write 権限が必要です。
+# (APIの有効化は機器の System > Admin Security から。詳細は README)
+router:
+  host: 192.168.50.1
+  scheme: https
+  # 認証はどちらか一方:
+  username: admin
+  password: ここに管理パスワード
+  # client_id: xxxx        # APIトークン(scope=api のもの。read-onlyでは切替不可)
+  # client_secret: yyyy
+  # verify_tls: false
+
+# settle_seconds: 5   # 回線切替後、測定開始までの安定待ち秒数

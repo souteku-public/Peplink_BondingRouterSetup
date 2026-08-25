@@ -1,0 +1,10 @@
+# 機器の認証情報を含むためコミットしない
+config.yaml
+config.*.yaml
+!config.example.yaml
+
+# 測定結果
+results/
+
+__pycache__/
+*.pyc

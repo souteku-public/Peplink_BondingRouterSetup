@@ -74,6 +74,22 @@ python3 run.py --demo          # InControl2に接続せず動作確認
 - **導入手順・InControl2側の認証設定・出力形式**: [tools/ic2-logger/README.md](tools/ic2-logger/README.md)
 - 機器から直接さらに高頻度で取る方式の調査: [docs/design/高頻度スループット記録_調査.md](docs/design/高頻度スループット記録_調査.md)
 
+## ボンディング回線スループット測定(実装済みツール)
+
+配下のPCから、ボンディングした回線の**最大スループットとRTT(無負荷/負荷中)**を実測する
+独立アプリケーションです。`--per-wan` でWAN優先度を自動で切り替えながら
+**回線1本ごとのポテンシャル**も測定できます(終了後に優先度を自動復元)。
+
+```bash
+cd tools/bonding-speedtest
+python3 -m pip install -r requirements.txt
+python3 run.py --demo          # ネットワーク不要の動作確認
+python3 run.py                 # ボンディング測定 / --per-wan で回線別測定
+```
+
+- **導入手順・測定の仕組み・注意事項**: [tools/bonding-speedtest/README.md](tools/bonding-speedtest/README.md)
+- 自社サーバーを測定先にする反射サーバー(`--serve`)を同梱 — SpeedFusionトンネル越しの実効性能も測定可能
+
 ## 参照資料
 
 本マニュアルは以下の公式資料を参照し、記載内容(項目名・選択肢・公称値)を照合しています。
