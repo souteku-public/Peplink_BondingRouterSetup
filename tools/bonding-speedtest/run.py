@@ -29,7 +29,7 @@ except ImportError:
     )
     raise SystemExit(1)
 
-from speedtest import engine, report, testserver
+from speedtest import engine, monitor, report, testserver
 from speedtest.router import PrioritySnapshot, RouterClient, RouterError
 
 DEFAULT_CONFIG = BASE_DIR / "config.yaml"
@@ -165,12 +165,16 @@ def run_per_wan(config: dict, targets: dict, limit_bytes: int | None,
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="ボンディング回線スループット測定")
     parser.add_argument("-c", "--config", default=str(DEFAULT_CONFIG), help="設定ファイル(既定: config.yaml)")
+    parser.add_argument("--monitor", metavar="時間",
+                        help="連続計測モード: 指定時間、1秒ごとにCSVへ記録する(例: 2h / 90m / 45s / 1h30m)")
     parser.add_argument("--per-wan", action="store_true", help="回線を1本ずつ切り替えて各回線のポテンシャルも測定する")
     parser.add_argument("--yes", action="store_true", help="--per-wan の確認プロンプトを省略する")
     parser.add_argument("--duration", type=float, help="1方向あたりの測定秒数(既定12秒)")
     parser.add_argument("--streams", type=int, help="並列コネクション数(既定8)")
     parser.add_argument("--limit-mb", type=float, help="1方向あたりのデータ量上限(MB)。従量SIMの保護用")
     parser.add_argument("--no-upload", action="store_true", help="上り測定を行わない")
+    parser.add_argument("--no-download", action="store_true",
+                        help="下り測定を行わない(--monitorと併用でRTTだけの長時間計測=データ消費ほぼゼロ)")
     parser.add_argument("--samples", action="store_true", help="0.25秒刻みの明細CSVも保存する")
     parser.add_argument("--demo", action="store_true", help="ネットワークを使わずローカルで動作確認")
     parser.add_argument("--serve", action="store_true", help="測定先(リフレクター)サーバーとして起動する")
@@ -203,6 +207,29 @@ def main(argv: list[str] | None = None) -> int:
     limit_bytes = int(args.limit_mb * 1e6) if args.limit_mb else (
         int(float(config["limit_mb"]) * 1e6) if config.get("limit_mb") else None
     )
+
+    if args.monitor:
+        try:
+            duration_s = monitor.parse_duration(args.monitor)
+        except ValueError as exc:
+            print(exc, file=sys.stderr)
+            return 1
+        print(f"連続計測モード: {monitor.format_duration(duration_s)} / 1秒ごとにCSVへ記録します")
+        print(f"測定先: {targets['download_url'].split('?')[0]}")
+        if not limit_bytes and not args.demo and not (args.no_download and args.no_upload):
+            print("注意: 飽和転送を続けるため、例えば100Mbpsの回線では1時間あたり約45GB(片方向)を消費します。")
+            print("      従量SIMでは --limit-mb を指定するか、--no-download --no-upload(RTTのみ)を検討してください。")
+        try:
+            summary = monitor.run_monitor(
+                targets, duration_s, Path(config["output_dir"]),
+                limit_bytes=limit_bytes,
+                do_download=not args.no_download, do_upload=not args.no_upload)
+        finally:
+            if demo_server is not None:
+                demo_server.shutdown()
+        report.save_results([summary], Path(config["output_dir"]))
+        print(f"ビューワーで確認: viewer.html をブラウザで開き、{summary['monitor_csv']} を読み込んでください。")
+        return 0
 
     est = f"{targets.get('duration', 12)}秒 × 2方向"
     print(f"測定先: {targets['download_url'].split('?')[0]}")

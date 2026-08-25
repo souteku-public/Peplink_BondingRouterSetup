@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>計測結果ビューワー — ボンディング回線スループット</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f4f5f3;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11, 11, 11, 0.10);
+    --down: #2a78d6;   /* 下り */
+    --up: #eb6834;     /* 上り */
+    --rtt: #1baf7a;    /* RTT */
+    --crit: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --bg: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --border: rgba(255, 255, 255, 0.10);
+      --down: #3987e5;
+      --up: #d95926;
+      --rtt: #199e70;
+      --crit: #e66767;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", Meiryo, system-ui, sans-serif;
+    font-size: 14px; line-height: 1.6;
+  }
+  .frame { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 12px; margin: 0 0 16px; }
+
+  .drop {
+    border: 2px dashed var(--border); border-radius: 10px;
+    padding: 22px; text-align: center; color: var(--ink-2);
+    background: var(--surface); margin-bottom: 14px; cursor: pointer;
+  }
+  .drop.hover { border-color: var(--down); color: var(--ink); }
+  .drop input { display: none; }
+  .drop .hint { font-size: 12px; color: var(--muted); }
+
+  .toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  select, button.ctl {
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 10px; font-family: inherit; font-size: 13px;
+  }
+  button.ctl { cursor: pointer; }
+  button.ctl:hover { border-color: var(--muted); }
+  .zoom-note { font-size: 12px; color: var(--muted); }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; }
+  .tile .k { font-size: 11px; color: var(--muted); letter-spacing: 0.05em; }
+  .tile .v { font-size: 22px; font-weight: 700; }
+  .tile .v small { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+  .tile .s { font-size: 11.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .tile.warn .v { color: var(--crit); }
+
+  .chart-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px 6px; margin-bottom: 14px; }
+  .chart-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .chart-head h2 { font-size: 13px; margin: 0 0 2px; }
+  .legend { display: flex; gap: 14px; font-size: 12px; color: var(--ink-2); }
+  .legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+  canvas { width: 100%; height: 220px; display: block; touch-action: none; cursor: crosshair; }
+
+  .tooltip {
+    position: fixed; pointer-events: none; z-index: 10;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 12px; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    font-variant-numeric: tabular-nums; display: none; min-width: 150px;
+  }
+  .tooltip b { display: block; margin-bottom: 2px; }
+  .tooltip .row { display: flex; justify-content: space-between; gap: 12px; }
+  .tooltip .row i { width: 10px; height: 3px; border-radius: 2px; display: inline-block; margin-right: 4px; vertical-align: middle; }
+
+  details { margin-top: 8px; }
+  summary { cursor: pointer; color: var(--ink-2); font-size: 13px; }
+  table.agg { border-collapse: collapse; width: 100%; margin-top: 8px; font-variant-numeric: tabular-nums; }
+  table.agg th, table.agg td { border-bottom: 1px solid var(--grid); padding: 4px 10px; font-size: 12px; text-align: right; }
+  table.agg th { color: var(--muted); font-weight: 600; }
+  table.agg th:first-child, table.agg td:first-child { text-align: left; }
+  .empty { color: var(--muted); text-align: center; padding: 40px 0; }
+</style>
+</head>
+<body>
+<div class="frame">
+  <h1>計測結果ビューワー</h1>
+  <p class="sub">bonding-speedtest の連続計測CSV(monitor_*.csv)をグラフ表示します。データはブラウザ内でのみ処理され、どこにも送信されません。</p>
+
+  <label class="drop" id="drop">
+    <input type="file" id="file-input" accept=".csv" multiple />
+    ここをクリックしてCSVを選択(複数可)、またはファイルをドラッグ&ドロップ
+    <div class="hint">対象: results/monitor_日時.csv</div>
+  </label>
+
+  <div class="toolbar" id="toolbar" hidden>
+    <label>ファイル:
+      <select id="file-select"></select>
+    </label>
+    <button class="ctl" id="reset-zoom" type="button">全体表示に戻す</button>
+    <span class="zoom-note">グラフ上をドラッグで範囲拡大 / ダブルクリックで全体表示</span>
+  </div>
+
+  <div id="content" class="empty">CSVを読み込むとここにグラフが表示されます。</div>
+</div>
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+'use strict';
+
+const files = [];            // {name, rows}
+let view = null;             // 現在表示中の rows
+let zoom = null;             // [startIdx, endIdx] or null
+const $ = (s) => document.querySelector(s);
+
+// ---------------------------------------------------------------- CSV読込
+
+function parseCsv(text) {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim());
+  if (!lines.length) return [];
+  const head = lines[0].split(',').map((h) => h.trim());
+  const idx = (name) => head.indexOf(name);
+  const iTime = idx('time'), iEl = idx('elapsed_s'),
+        iDown = idx('down_mbps'), iUp = idx('up_mbps'),
+        iRtt = idx('rtt_ms'), iRttMax = idx('rtt_max_ms'), iFail = idx('rtt_fail');
+  if (iTime < 0 || iEl < 0) return null; // monitor CSV ではない
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const c = lines[i].split(',');
+    const num = (j) => (j >= 0 && c[j] !== '' && c[j] !== undefined ? parseFloat(c[j]) : null);
+    rows.push({
+      time: c[iTime], elapsed: num(iEl),
+      down: num(iDown), up: num(iUp),
+      rtt: num(iRtt), rttMax: num(iRttMax), fail: num(iFail) || 0,
+    });
+  }
+  return rows;
+}
+
+function loadFiles(fileList) {
+  let pending = fileList.length;
+  for (const f of fileList) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const rows = parseCsv(reader.result);
+      if (rows === null) {
+        alert(`${f.name} は連続計測CSV(monitor_*.csv)の形式ではありません。`);
+      } else if (rows.length) {
+        files.push({ name: f.name, rows });
+      }
+      if (--pending === 0) afterLoad();
+    };
+    reader.readAsText(f);
+  }
+}
+
+function afterLoad() {
+  if (!files.length) return;
+  const sel = $('#file-select');
+  sel.innerHTML = '';
+  files.forEach((f, i) => {
+    const o = document.createElement('option');
+    o.value = i; o.textContent = `${f.name}(${f.rows.length}秒)`;
+    sel.appendChild(o);
+  });
+  sel.value = String(files.length - 1);
+  $('#toolbar').hidden = false;
+  show(files.length - 1);
+}
+
+function show(index) {
+  view = files[index].rows;
+  zoom = null;
+  render();
+}
+
+// ---------------------------------------------------------------- 統計
+
+function stats(values) {
+  const v = values.filter((x) => x !== null && !Number.isNaN(x));
+  if (!v.length) return null;
+  const sorted = [...v].sort((a, b) => a - b);
+  return {
+    avg: v.reduce((a, b) => a + b, 0) / v.length,
+    p95: sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))],
+    max: sorted[sorted.length - 1],
+    min: sorted[0],
+  };
+}
+
+const fmt = (x, d = 1) => (x === null || x === undefined ? '—' : x.toFixed(d));
+
+// ---------------------------------------------------------------- 描画
+
+function colors() {
+  const css = getComputedStyle(document.documentElement);
+  const get = (n) => css.getPropertyValue(n).trim();
+  return { down: get('--down'), up: get('--up'), rtt: get('--rtt'), grid: get('--grid'),
+           axis: get('--axis'), ink: get('--ink'), ink2: get('--ink-2'), muted: get('--muted'),
+           surface: get('--surface'), crit: get('--crit') };
+}
+
+function currentRows() {
+  if (!view) return [];
+  return zoom ? view.slice(zoom[0], zoom[1] + 1) : view;
+}
+
+function render() {
+  const rows = currentRows();
+  if (!rows.length) return;
+  const c = colors();
+  const gb = (key) => rows.reduce((a, r) => a + (r[key] || 0), 0) / 8 / 1000; // Mbps秒 → GB
+  const sDown = stats(rows.map((r) => r.down));
+  const sUp = stats(rows.map((r) => r.up));
+  const sRtt = stats(rows.map((r) => r.rtt));
+  const sRttMax = stats(rows.map((r) => r.rttMax));
+  const fails = rows.reduce((a, r) => a + (r.fail || 0), 0);
+
+  const content = $('#content');
+  content.className = '';
+  content.innerHTML = `
+    <div class="tiles">
+      <div class="tile"><div class="k">表示範囲</div>
+        <div class="v">${dur(rows.length)}</div>
+        <div class="s">${rows[0].time.slice(11, 19)} 〜 ${rows[rows.length - 1].time.slice(11, 19)}</div></div>
+      <div class="tile"><div class="k">下り</div>
+        <div class="v">${fmt(sDown && sDown.avg)}<small> Mbps 平均</small></div>
+        <div class="s">ピーク ${fmt(sDown && sDown.max)} / p95 ${fmt(sDown && sDown.p95)} ・ ${gb('down').toFixed(2)} GB</div></div>
+      <div class="tile"><div class="k">上り</div>
+        <div class="v">${fmt(sUp && sUp.avg)}<small> Mbps 平均</small></div>
+        <div class="s">ピーク ${fmt(sUp && sUp.max)} / p95 ${fmt(sUp && sUp.p95)} ・ ${gb('up').toFixed(2)} GB</div></div>
+      <div class="tile"><div class="k">RTT</div>
+        <div class="v">${fmt(sRtt && sRtt.avg)}<small> ms 平均</small></div>
+        <div class="s">p95 ${fmt(sRtt && sRtt.p95)} / 最大 ${fmt(sRttMax && sRttMax.max)}</div></div>
+      <div class="tile${fails ? ' warn' : ''}"><div class="k">RTT失敗(疎通異常)</div>
+        <div class="v">${fails}<small> 回</small></div>
+        <div class="s">${fails ? '回線断の可能性がある時間帯があります' : '疎通は安定していました'}</div></div>
+    </div>
+
+    <div class="chart-box">
+      <div class="chart-head"><h2>スループット(Mbps)</h2>
+        <span class="legend"><span><i style="background:${c.down}"></i>下り</span>
+        <span><i style="background:${c.up}"></i>上り</span></span></div>
+      <canvas id="chart-tp"></canvas>
+    </div>
+    <div class="chart-box">
+      <div class="chart-head"><h2>RTT(ms)</h2>
+        <span class="legend"><span><i style="background:${c.rtt}"></i>RTT 平均(帯: その1秒の最大まで)</span></span></div>
+      <canvas id="chart-rtt"></canvas>
+    </div>
+
+    <details><summary>1分ごとの集計表を表示</summary><div id="agg"></div></details>
+  `;
+
+  drawChart($('#chart-tp'), rows,
+    [{ key: 'down', color: c.down, label: '下り' }, { key: 'up', color: c.up, label: '上り' }], c);
+  drawChart($('#chart-rtt'), rows,
+    [{ key: 'rtt', bandKey: 'rttMax', color: c.rtt, label: 'RTT' }], c);
+  buildAggTable(rows);
+}
+
+function dur(seconds) {
+  const h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60), s = Math.floor(seconds % 60);
+  return h ? `${h}時間${m}分` : m ? `${m}分${s}秒` : `${s}秒`;
+}
+
+// 1ピクセル幅のバケットに avg/min/max を集計してから描く(長時間CSVでも軽い)
+function bucketize(rows, key, bandKey, buckets) {
+  const out = [];
+  const per = rows.length / buckets;
+  for (let b = 0; b < buckets; b++) {
+    const lo = Math.floor(b * per), hi = Math.max(lo + 1, Math.floor((b + 1) * per));
+    let sum = 0, n = 0, mn = Infinity, mx = -Infinity;
+    for (let i = lo; i < hi && i < rows.length; i++) {
+      const v = rows[i][key];
+      if (v === null || v === undefined || Number.isNaN(v)) continue;
+      sum += v; n++;
+      mn = Math.min(mn, v);
+      const hiV = bandKey ? (rows[i][bandKey] ?? v) : v;
+      mx = Math.max(mx, hiV);
+    }
+    out.push(n ? { avg: sum / n, min: mn, max: mx, i0: lo, i1: hi - 1 } : null);
+  }
+  return out;
+}
+
+const chartsMeta = [];  // ホバー/ズーム用に保持
+
+function drawChart(canvas, rows, series, c) {
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || canvas.parentElement.clientWidth - 28;
+  const cssH = 220;
+  canvas.width = cssW * dpr; canvas.height = cssH * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const padL = 52, padR = 10, padT = 10, padB = 24;
+  const W = cssW - padL - padR, H = cssH - padT - padB;
+  const buckets = Math.max(10, Math.min(rows.length, Math.floor(W)));
+  const data = series.map((s) => bucketize(rows, s.key, s.bandKey, buckets));
+
+  let yMax = 0;
+  data.forEach((buckArr) => buckArr.forEach((b) => { if (b) yMax = Math.max(yMax, b.max); }));
+  yMax = yMax > 0 ? yMax * 1.08 : 1;
+  const x = (b) => padL + (b + 0.5) / buckets * W;
+  const y = (v) => padT + H - (v / yMax) * H;
+
+  // グリッドと目盛り
+  ctx.clearRect(0, 0, cssW, cssH);
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.fillStyle = c.muted;
+  ctx.strokeStyle = c.grid;
+  ctx.lineWidth = 1;
+  const ticks = 4;
+  for (let t = 0; t <= ticks; t++) {
+    const v = yMax / ticks * t, yy = y(v);
+    ctx.beginPath(); ctx.moveTo(padL, yy); ctx.lineTo(padL + W, yy); ctx.stroke();
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText(v >= 100 ? Math.round(v) : v.toFixed(v >= 10 ? 0 : 1), padL - 6, yy);
+  }
+  // X軸時刻ラベル
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  const labelCount = Math.min(6, rows.length);
+  for (let t = 0; t < labelCount; t++) {
+    const i = Math.floor(t * (rows.length - 1) / Math.max(1, labelCount - 1));
+    const bx = padL + (i / Math.max(1, rows.length - 1)) * W;
+    ctx.fillText(rows[i].time.slice(11, 19), Math.min(Math.max(bx, padL + 24), padL + W - 24), padT + H + 6);
+  }
+  ctx.strokeStyle = c.axis;
+  ctx.beginPath(); ctx.moveTo(padL, padT + H); ctx.lineTo(padL + W, padT + H); ctx.stroke();
+
+  // 系列: min-max帯 → 平均線
+  series.forEach((s, si) => {
+    const arr = data[si];
+    ctx.fillStyle = s.color + '26'; // 15%アルファ
+    ctx.beginPath();
+    let started = false;
+    arr.forEach((b, i) => { if (b) { const xx = x(i); if (!started) { ctx.moveTo(xx, y(b.max)); started = true; } else ctx.lineTo(xx, y(b.max)); } });
+    for (let i = arr.length - 1; i >= 0; i--) { const b = arr[i]; if (b) ctx.lineTo(x(i), y(b.min)); }
+    if (started) { ctx.closePath(); ctx.fill(); }
+
+    ctx.strokeStyle = s.color; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+    ctx.beginPath(); started = false;
+    arr.forEach((b, i) => { if (b) { const xx = x(i), yy = y(b.avg); if (!started) { ctx.moveTo(xx, yy); started = true; } else ctx.lineTo(xx, yy); } });
+    ctx.stroke();
+  });
+
+  chartsMeta.push && 0;
+  canvas._meta = { rows, series, data, buckets, padL, padT, W, H, yMax };
+  attachInteraction(canvas, c);
+}
+
+// ---------------------------------------------------------------- ホバー & ズーム
+
+function attachInteraction(canvas, c) {
+  const tooltip = $('#tooltip');
+  let dragStart = null;
+
+  const bucketAt = (ev) => {
+    const rect = canvas.getBoundingClientRect();
+    const m = canvas._meta;
+    const rel = (ev.clientX - rect.left - m.padL) / m.W;
+    return Math.max(0, Math.min(m.buckets - 1, Math.floor(rel * m.buckets)));
+  };
+
+  canvas.onmousemove = (ev) => {
+    const m = canvas._meta;
+    const bi = bucketAt(ev);
+    const first = m.data.find((arr) => arr[bi]);
+    if (!first) { tooltip.style.display = 'none'; return; }
+    const rowIdx = first[bi].i0;
+    const row = m.rows[Math.min(rowIdx, m.rows.length - 1)];
+    let html = `<b>${row.time.slice(11, 19)}</b>`;
+    m.series.forEach((s, si) => {
+      const b = m.data[si][bi];
+      if (b) html += `<div class="row"><span><i style="background:${s.color}"></i>${s.label}</span><span>${b.avg.toFixed(1)}${b.max - b.min > 0.05 ? `(${b.min.toFixed(1)}〜${b.max.toFixed(1)})` : ''}</span></div>`;
+    });
+    tooltip.innerHTML = html;
+    tooltip.style.display = 'block';
+    const tw = tooltip.offsetWidth;
+    tooltip.style.left = Math.min(ev.clientX + 14, window.innerWidth - tw - 8) + 'px';
+    tooltip.style.top = (ev.clientY + 14) + 'px';
+
+    if (dragStart !== null) redrawSelection(canvas, c, dragStart, ev);
+  };
+  canvas.onmouseleave = () => { tooltip.style.display = 'none'; };
+  canvas.onmousedown = (ev) => { dragStart = ev.clientX; ev.preventDefault(); };
+  window.addEventListener('mouseup', (ev) => {
+    if (dragStart === null || !canvas._meta) return;
+    const m = canvas._meta;
+    const rect = canvas.getBoundingClientRect();
+    const x1 = Math.min(dragStart, ev.clientX), x2 = Math.max(dragStart, ev.clientX);
+    dragStart = null;
+    if (x2 - x1 < 8) return; // クリック扱い
+    const toIdx = (px) => {
+      const rel = (px - rect.left - m.padL) / m.W;
+      return Math.max(0, Math.min(m.rows.length - 1, Math.round(rel * (m.rows.length - 1))));
+    };
+    const base = zoom ? zoom[0] : 0;
+    zoom = [base + toIdx(x1), base + toIdx(x2)];
+    if (zoom[1] - zoom[0] < 5) { zoom = null; }
+    render();
+  });
+  canvas.ondblclick = () => { zoom = null; render(); };
+}
+
+function redrawSelection(canvas, c, startX, ev) {
+  // 選択帯の簡易描画(次のrenderで消える)
+  const rect = canvas.getBoundingClientRect();
+  const ctx = canvas.getContext('2d');
+  const m = canvas._meta;
+  render.pendingSel = true;
+  // 高頻度再描画を避けるため、選択帯だけ半透明で上書きする
+  const x1 = Math.min(startX, ev.clientX) - rect.left, x2 = Math.max(startX, ev.clientX) - rect.left;
+  // いったん再描画してから帯を載せる(バケット描画は軽量)
+  drawChartAgain(canvas, c);
+  ctx.fillStyle = c.ink + '14';
+  ctx.fillRect(x1, m.padT, x2 - x1, m.H);
+}
+
+function drawChartAgain(canvas, c) {
+  const m = canvas._meta;
+  drawChart(canvas, m.rows, m.series, c);
+}
+
+// ---------------------------------------------------------------- 1分集計表
+
+function buildAggTable(rows) {
+  const groups = new Map();
+  rows.forEach((r) => {
+    const key = r.time.slice(11, 16); // HH:MM
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(r);
+  });
+  let html = '<table class="agg"><tr><th>時刻</th><th>下り平均</th><th>下り最大</th><th>上り平均</th><th>上り最大</th><th>RTT平均</th><th>RTT最大</th><th>RTT失敗</th></tr>';
+  groups.forEach((g, key) => {
+    const s = (k) => stats(g.map((r) => r[k]));
+    const d = s('down'), u = s('up'), rt = s('rtt'), rm = s('rttMax');
+    const fails = g.reduce((a, r) => a + (r.fail || 0), 0);
+    html += `<tr><td>${key}</td><td>${fmt(d && d.avg)}</td><td>${fmt(d && d.max)}</td>`
+          + `<td>${fmt(u && u.avg)}</td><td>${fmt(u && u.max)}</td>`
+          + `<td>${fmt(rt && rt.avg)}</td><td>${fmt(rm && rm.max)}</td><td>${fails || ''}</td></tr>`;
+  });
+  html += '</table>';
+  $('#agg').innerHTML = html;
+}
+
+// ---------------------------------------------------------------- 入力まわり
+
+$('#file-input').addEventListener('change', (e) => loadFiles(e.target.files));
+const drop = $('#drop');
+drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('hover'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('hover'));
+drop.addEventListener('drop', (e) => {
+  e.preventDefault(); drop.classList.remove('hover');
+  loadFiles(e.dataTransfer.files);
+});
+$('#file-select').addEventListener('change', (e) => show(parseInt(e.target.value, 10)));
+$('#reset-zoom').addEventListener('click', () => { zoom = null; render(); });
+window.addEventListener('resize', () => { if (view) render(); });
+if (window.matchMedia) {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (view) render(); });
+}
+</script>
+</body>
+</html>
