@@ -11,6 +11,8 @@ Peplink ルーター(MAX BR2 Pro / MAX Transit Pro Duo)配下のPCから、
 - 結果はコンソールの比較表+CSV(履歴追記)+JSONに保存
 - `--monitor 2h` で**時間を指定した連続計測(1秒ごとにCSV記録、1時間≒0.2MB)**
 - 同梱の **viewer.html** をブラウザで開けば、CSVをグラフ・統計・ズームで確認できる
+- **コマンド不要の対話メニュー付き**: 「計測スタート」をダブルクリック(または引数なしで起動)すると、
+  番号を選んでEnterを押すだけの日本語メニューが立ち上がります
 - [設定管理コンソール](../peplink-console/)/[IC2ロガー](../ic2-logger/)とは独立した別アプリです
 
 ---
@@ -42,15 +44,39 @@ Peplink ルーター(MAX BR2 Pro / MAX Transit Pro Duo)配下のPCから、
 
 ## 2. インストールと最初の測定
 
+### コマンドが苦手な方向け(推奨): ダブルクリックで起動
+
+1. [Python](https://www.python.org/downloads/) をインストール
+   (Windowsは「Add Python to PATH」に必ずチェック)
+2. このフォルダの **「計測スタート.bat」(Windows)** または
+   **「計測スタート.command」(Mac)** をダブルクリック
+   ※初回は自動で準備(PyYAMLのインストール)が走ります
+   ※Macで「開発元を確認できない」と出たら、右クリック→「開く」
+3. 日本語のメニューが表示されるので、**番号を選んでEnterを押すだけ**です
+
+```
+  1) かんたん測定 — 今のボンディング回線の速度とRTTを測る(約30秒)
+  2) 連続計測 — 時間を決めて1秒ごとにCSVへ記録し続ける
+  3) 回線ごとの測定 — 回線を1本ずつ切り替えて各回線の実力を測る
+  4) 結果を見る — ビューワー(グラフ画面)をブラウザで開く
+  5) 動作確認 — ネットワークを使わずに試してみる(デモ)
+  6) 測定先サーバーとして起動 — 本社・拠点側のPCで使う
+```
+
+- 迷ったら **そのままEnter**(★印の既定値)で進めます
+- 計測時間・データ量の上限などもすべて対話で聞かれます
+- 実行前に「これから何をするか・通信量の目安」が必ず表示されます
+- 回線ごとの測定で必要なルーター接続情報も対話で入力でき、保存も選べます
+- ターミナルから使う場合は `python3 run.py`(引数なし)でも同じメニューが開きます
+
+### コマンドで使う場合
+
 ```bash
 cd Peplink_BondingRouterSetup/tools/bonding-speedtest
 python3 -m pip install -r requirements.txt
 
-# 動作確認(ネットワークを使わずローカルで完結)
-python3 run.py --demo
-
-# ボンディング測定(設定ファイル無しでもCloudflare相手に実行できます)
-python3 run.py
+python3 run.py --demo      # 動作確認(ネットワークを使わずローカルで完結)
+python3 run.py --duration 12 --streams 8   # 引数を付けると対話なしで即実行
 ```
 
 出力例:
@@ -207,11 +233,12 @@ targets:
 ## 8. コマンド一覧と設定
 
 ```bash
-python3 run.py                     # ボンディング測定(現在の構成のまま)
+python3 run.py                     # 引数なし: 対話メニュー(ウィザード)を起動
+python3 run.py --wizard            # 対話メニューを明示的に起動
+python3 run.py --duration 12       # 引数あり: 対話なしで即測定(従来どおり)
 python3 run.py --per-wan           # + 回線ごとの単体測定(要 router 設定)
 python3 run.py --monitor 2h        # 連続計測: 2時間、1秒ごとにCSV記録
 python3 run.py --monitor 8h --no-download --no-upload   # RTTのみ長時間計測
-python3 run.py --duration 20       # 1方向あたり20秒に変更
 python3 run.py --limit-mb 300      # 1方向300MBで打ち切り(従量SIM保護)
 python3 run.py --no-upload         # 下りとRTTのみ(--no-download で上りとRTTのみ)
 python3 run.py --samples           # 0.25秒刻みの明細CSVも保存

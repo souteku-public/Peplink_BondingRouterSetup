@@ -29,7 +29,7 @@ except ImportError:
     )
     raise SystemExit(1)
 
-from speedtest import engine, monitor, report, testserver
+from speedtest import engine, monitor, report, testserver, wizard
 from speedtest.router import PrioritySnapshot, RouterClient, RouterError
 
 DEFAULT_CONFIG = BASE_DIR / "config.yaml"
@@ -62,6 +62,37 @@ def build_targets(config: dict) -> dict:
         if config.get(key) is not None:
             cfg[key] = config[key]
     return cfg
+
+
+class WizardContext:
+    """ウィザードから run.py の機能を使うための橋渡し。"""
+
+    base_dir = BASE_DIR
+    monitor = monitor
+    report = report
+    testserver = testserver
+
+    @staticmethod
+    def load_config_soft() -> dict:
+        path = DEFAULT_CONFIG
+        if path.exists():
+            data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        else:
+            data = {}
+        data.setdefault("output_dir", str(BASE_DIR / "results"))
+        return data
+
+    @staticmethod
+    def build_targets(config: dict) -> dict:
+        return build_targets(config)
+
+    @staticmethod
+    def run_phase(name, targets, limit_bytes, **kw):
+        return run_phase(name, targets, limit_bytes, **kw)
+
+    @staticmethod
+    def run_per_wan(config, targets, limit_bytes, **kw):
+        return run_per_wan(config, targets, limit_bytes, **kw)
 
 
 # ---------------------------------------------------------------------------
@@ -180,7 +211,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--serve", action="store_true", help="測定先(リフレクター)サーバーとして起動する")
     parser.add_argument("--host", default="0.0.0.0", help="--serve の待ち受けアドレス")
     parser.add_argument("--port", type=int, default=8123, help="--serve の待ち受けポート")
+    parser.add_argument("--wizard", action="store_true",
+                        help="対話ウィザードを起動する(引数なしで起動した場合も自動でこれになります)")
     args = parser.parse_args(argv)
+
+    # 引数なし(ダブルクリック起動など)は対話ウィザードへ
+    raw_args = argv if argv is not None else sys.argv[1:]
+    if args.wizard or (not raw_args and sys.stdin is not None and sys.stdin.isatty()):
+        try:
+            return wizard.run(WizardContext)
+        except KeyboardInterrupt:
+            print("\n終了します。")
+            return 0
 
     if args.serve:
         testserver.serve(args.host, args.port)
