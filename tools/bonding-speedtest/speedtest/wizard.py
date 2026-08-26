@@ -228,9 +228,21 @@ def _per_wan(ctx) -> None:
     config = ctx.load_config_soft()
     print()
     print("── 回線ごとの測定 ──────────────────────────")
-    print("  ルーターのWAN優先度を一時的に切り替えながら、回線を1本ずつ測定します。")
-    print("  測定終了後は自動で元に戻します。※本番運用中には実行しないでください。")
+    print("  回線を1本ずつ使う状態にして順番に測定し、各回線の実力を比較します。")
 
+    mode = ask_choice(
+        "回線の切り替え方法を選んでください",
+        [
+            "自動 — ルーターのAPIで優先度を切り替える(終了後に自動で復元)",
+            "手動 — 自分でWeb管理画面を操作して切り替える(ルーターのAPI設定が不要)",
+        ],
+        default=1,
+    )
+    if mode == 2:
+        _per_wan_manual(ctx, config)
+        return
+
+    print("  ※自動切替は測定終了後に優先度を元へ戻します。本番運用中には実行しないでください。")
     router = config.get("router") or {}
     if not router.get("host"):
         print("\n  ルーターへの接続情報が設定されていません。ここで入力できます。")
@@ -259,6 +271,38 @@ def _per_wan(ctx) -> None:
     print("\n保存しました:")
     for p in written:
         print(f"  {p}")
+
+
+def _per_wan_manual(ctx, config: dict) -> None:
+    """Router APIを使わない回線別測定。切替はWeb GUIで人が行う。"""
+    targets = ctx.build_targets(config)
+    print()
+    print("  手動モードでは、測定のたびにWeb管理画面のダッシュボードで")
+    print("  「測定したい回線だけが優先度1(P1)、他はP2」になるよう切り替えてください。")
+    print("  (切替のたびに Apply Changes を忘れずに。手順はマニュアル 02章参照)")
+    limit_mb = ask_limit_mb()
+    limit = int(limit_mb * 1e6) if limit_mb else None
+
+    phases: list[dict] = []
+    if ask_yesno("まず現在の状態(ボンディングのまま)も測定しておきますか?", default=True):
+        phases.append(ctx.run_phase("ボンディング(現構成)", targets, limit))
+
+    while True:
+        print()
+        name = ask("いま単独にした回線の名前(例: Cellular 1)。終わる場合は q", "q")
+        if name.lower() in ("q", "quit", "やめる"):
+            break
+        input("  回線を切り替えて Apply したら、安定するまで10秒ほど待ってから Enter を押してください… ")
+        phases.append(ctx.run_phase(f"単独: {name}", targets, limit))
+        phases[-1]["notes"] = "per-wan-manual"
+
+    if phases:
+        ctx.report.print_summary_table(phases)
+        written = ctx.report.save_results(phases, Path(config["output_dir"]))
+        print("\n保存しました:")
+        for p in written:
+            print(f"  {p}")
+    print("\n※測定が終わったら、Web管理画面で優先度を元の構成へ戻すのを忘れないでください。")
 
 
 def _offer_save_router(ctx, router: dict) -> None:
